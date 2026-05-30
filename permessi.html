@@ -706,7 +706,14 @@ async function sendMessage() {
     const data = await response.json();
     removeTyping(typingId);
 
-    const reply = data.content?.[0]?.text || 'Errore nella risposta.';
+    let reply;
+    if (data.content && data.content[0] && data.content[0].text) {
+      reply = data.content[0].text;
+    } else if (data.error) {
+      reply = '⚠️ API: ' + (data.error.message || JSON.stringify(data.error));
+    } else {
+      reply = '⚠️ Risposta inattesa: ' + JSON.stringify(data).slice(0,300);
+    }
     conversationHistory.push({ role: 'assistant', content: reply });
 
     // Check if it's a letter/document
