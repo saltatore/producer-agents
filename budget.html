@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Budget Agent · Commercial</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f2eb;
+  --bg2: #ede9e0;
+  --surface: #ffffff;
+  --border: #d8d2c4;
+  --text: #1a1814;
+  --muted: #8a8070;
+  --accent: #1a1814;
+  --accent2: #c8380a;
+  --green: #1a6b3a;
+  --red: #c8380a;
+  --blue: #1a3a6b;
+  --yellow: #e8b84b;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'IBM Plex Sans', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* HEADER */
+.header {
+  background: var(--accent);
+  color: #f5f2eb;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-logo {
+  font-family: 'Syne', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.header-logo span { color: var(--yellow); }
+
+.header-sub {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin-top: 2px;
+}
+
+.header-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+.project-chip {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-family: 'IBM Plex Mono', monospace;
+  cursor: pointer;
+  color: #f5f2eb;
+}
+
+/* TABS */
+.tabs {
+  display: flex;
+  background: var(--bg2);
+  border-bottom: 2px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+
+.tab {
+  flex-shrink: 0;
+  padding: 12px 18px;
+  font-size: 12px;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.15s;
+}
+
+.tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent2);
+  font-weight: 500;
+}
+
+/* PANELS */
+.panel { display: none; padding: 16px; padding-bottom: 100px; }
+.panel.active { display: block; }
+
+/* PROJECT INFO CARD */
+.project-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.card-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-group.full { grid-column: 1 / -1; }
+
+.form-label {
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.form-input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 11px;
+  font-size: 13px;
+  font-family: 'IBM Plex Sans', sans-serif;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+
+.form-input:focus { border-color: var(--accent); }
+
+/* BUDGET TABLE */
+.budget-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.budget-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--accent);
+  color: #f5f2eb;
+  cursor: pointer;
+  user-select: none;
+}
+
+.section-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.section-total {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--yellow);
+}
+
+.section-toggle { font-size: 10px; opacity: 0.6; margin-left: 8px; }
+
+.budget-rows { padding: 8px; }
+
+.budget-row {
+  display: grid;
+  grid-template-columns: 1fr 60px 80px 80px 28px;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--bg2);
+}
+
+.budget-row:last-child { border-bottom: none; }
+
+.budget-row input {
+  background: var(--bg);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-family: 'IBM Plex Sans', sans-serif;
+  color: var(--text);
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+
+.budget-row input:focus { border-color: var(--accent); background: white; }
+
+.budget-row input.num {
+  font-family: 'IBM Plex Mono', monospace;
+  text-align: right;
+}
+
+.row-total {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  text-align: right;
+  color: var(--accent2);
+  font-weight: 500;
+  padding-right: 4px;
+}
+
+.del-btn {
+  width: 22px; height: 22px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--muted);
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.del-btn:active { background: var(--red); color: white; border-color: var(--red); }
+
+.add-row-btn {
+  width: 100%;
+  padding: 8px;
+  background: var(--bg2);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  font-size: 11px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--muted);
+  cursor: pointer;
+  margin-top: 4px;
+  transition: all 0.15s;
+}
+.add-row-btn:active { background: var(--accent); color: #f5f2eb; border-style: solid; }
+
+/* TOTALS SUMMARY */
+.totals-card {
+  background: var(--accent);
+  color: #f5f2eb;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.totals-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  font-size: 13px;
+}
+.totals-row:last-child { border-bottom: none; }
+
+.totals-row.grand {
+  padding-top: 12px;
+  margin-top: 4px;
+  border-top: 2px solid rgba(255,255,255,0.3);
+  border-bottom: none;
+}
+
+.totals-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; opacity: 0.7; }
+.totals-label.grand { font-size: 13px; font-weight: 500; opacity: 1; font-family: 'Syne', sans-serif; }
+.totals-value { font-family: 'IBM Plex Mono', monospace; font-weight: 500; }
+.totals-value.grand { font-size: 20px; color: var(--yellow); font-weight: 700; }
+
+/* COST REPORT */
+.cr-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.variance-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 500;
+}
+
+.variance-pill.over { background: #fde8e0; color: var(--red); }
+.variance-pill.under { background: #e0f5e8; color: var(--green); }
+.variance-pill.even { background: var(--bg2); color: var(--muted); }
+
+.cr-table {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.cr-table-header {
+  display: grid;
+  grid-template-columns: 1fr 90px 90px 80px;
+  gap: 4px;
+  padding: 10px 14px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+}
+
+.cr-th {
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: right;
+}
+.cr-th:first-child { text-align: left; }
+
+.cr-row {
+  display: grid;
+  grid-template-columns: 1fr 90px 90px 80px;
+  gap: 4px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--bg2);
+  align-items: center;
+}
+.cr-row:last-child { border-bottom: none; }
+
+.cr-cell {
+  font-size: 12px;
+  font-family: 'IBM Plex Mono', monospace;
+  text-align: right;
+}
+.cr-cell:first-child {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-weight: 500;
+  text-align: left;
+  font-size: 13px;
+}
+
+.cr-cell.over { color: var(--red); }
+.cr-cell.under { color: var(--green); }
+.cr-cell.even { color: var(--muted); }
+
+.cr-actual-input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 7px;
+  font-size: 12px;
+  font-family: 'IBM Plex Mono', monospace;
+  text-align: right;
+  color: var(--text);
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+.cr-actual-input:focus { border-color: var(--accent); background: white; }
+
+/* AI PANEL */
+.ai-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.ai-chat-area {
+  padding: 14px;
+  min-height: 180px;
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ai-msg { max-width: 90%; }
+.ai-msg.user { align-self: flex-end; }
+.ai-msg.assistant { align-self: flex-start; }
+
+.ai-bubble {
+  padding: 10px 13px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.ai-msg.user .ai-bubble {
+  background: var(--accent);
+  color: #f5f2eb;
+  border-bottom-right-radius: 3px;
+}
+
+.ai-msg.assistant .ai-bubble {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 3px;
+}
+
+.ai-input-row {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid var(--border);
+  background: var(--bg2);
+}
+
+.ai-input {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-family: 'IBM Plex Sans', sans-serif;
+  color: var(--text);
+  outline: none;
+}
+.ai-input:focus { border-color: var(--accent); }
+
+.ai-send {
+  background: var(--accent);
+  color: #f5f2eb;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.ai-send:active { opacity: 0.7; }
+.ai-send:disabled { opacity: 0.3; }
+
+.quick-ai-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.quick-ai-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.quick-ai-btn:active { background: var(--accent); color: #f5f2eb; border-color: var(--accent); }
+
+.qa-icon { font-size: 18px; margin-bottom: 5px; }
+.qa-title { font-size: 12px; font-weight: 500; }
+.qa-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.quick-ai-btn:active .qa-desc { color: rgba(255,255,255,0.6); }
+
+/* TYPING */
+.typing-dots {
+  display: flex; gap: 4px; align-items: center; padding: 2px 0;
+}
+.td { width: 6px; height: 6px; background: var(--muted); border-radius: 50%; animation: tb 1.2s infinite; }
+.td:nth-child(2) { animation-delay: 0.2s; }
+.td:nth-child(3) { animation-delay: 0.4s; }
+@keyframes tb { 0%,60%,100%{transform:translateY(0);opacity:.4} 30%{transform:translateY(-5px);opacity:1} }
+
+/* BOTTOM ACTION BAR */
+.bottom-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 10px 16px;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+  display: flex;
+  gap: 8px;
+}
+
+.bar-btn {
+  flex: 1;
+  padding: 11px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  color: var(--text);
+  transition: all 0.15s;
+}
+.bar-btn:active { background: var(--accent); color: #f5f2eb; border-color: var(--accent); }
+.bar-btn.primary { background: var(--accent); color: #f5f2eb; border-color: var(--accent); }
+.bar-btn.primary:active { background: var(--accent2); border-color: var(--accent2); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <div class="header-logo">BUD<span>GET</span></div>
+    <div class="header-sub">Commercial Production</div>
+  </div>
+  <div class="header-right">
+    <div class="project-chip" onclick="editProject()">✏️ <span id="proj-chip-name">Nuovo Progetto</span></div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="showTab('budget')">📊 Budget</button>
+  <button class="tab" onclick="showTab('costreport')">📈 Cost Report</button>
+  <button class="tab" onclick="showTab('ai')">🤖 AI Advisor</button>
+  <button class="tab" onclick="showTab('progetto')">📋 Progetto</button>
+</div>
+
+<!-- ══════════════ BUDGET PANEL ══════════════ -->
+<div class="panel active" id="panel-budget">
+
+  <!-- Totals summary -->
+  <div class="totals-card" id="totals-card">
+    <div class="totals-row">
+      <span class="totals-label">Pre-Produzione</span>
+      <span class="totals-value" id="tot-preprod">€ 0</span>
+    </div>
+    <div class="totals-row">
+      <span class="totals-label">Crew & Cast</span>
+      <span class="totals-value" id="tot-crew">€ 0</span>
+    </div>
+    <div class="totals-row">
+      <span class="totals-label">Location & Set</span>
+      <span class="totals-value" id="tot-location">€ 0</span>
+    </div>
+    <div class="totals-row">
+      <span class="totals-label">Attrezzatura & Mezzi</span>
+      <span class="totals-value" id="tot-attrezzatura">€ 0</span>
+    </div>
+    <div class="totals-row">
+      <span class="totals-label">Post-Produzione</span>
+      <span class="totals-value" id="tot-post">€ 0</span>
+    </div>
+    <div class="totals-row">
+      <span class="totals-label">Varie & Imprevisti</span>
+      <span class="totals-value" id="tot-varie">€ 0</span>
+    </div>
+    <div class="totals-row grand">
+      <span class="totals-label grand">TOTALE BUDGET</span>
+      <span class="totals-value grand" id="tot-grand">€ 0</span>
+    </div>
+  </div>
+
+  <!-- SECTIONS -->
+  <div id="budget-sections"></div>
+
+</div>
+
+<!-- ══════════════ COST REPORT PANEL ══════════════ -->
+<div class="panel" id="panel-costreport">
+
+  <div class="cr-header">
+    <div>
+      <div style="font-family:'Syne',sans-serif; font-size:20px; font-weight:800;">Cost Report</div>
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); margin-top:2px;" id="cr-date">—</div>
+    </div>
+    <div id="cr-variance-pill" class="variance-pill even">± € 0</div>
+  </div>
+
+  <!-- Summary bar -->
+  <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:14px;">
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; text-align:center;">
+      <div>
+        <div style="font-size:10px; font-family:'IBM Plex Mono',monospace; color:var(--muted); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:4px;">Budget</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:16px; font-weight:600;" id="cr-budget-total">€ 0</div>
+      </div>
+      <div>
+        <div style="font-size:10px; font-family:'IBM Plex Mono',monospace; color:var(--muted); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:4px;">Consuntivo</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:16px; font-weight:600;" id="cr-actual-total">€ 0</div>
+      </div>
+      <div>
+        <div style="font-size:10px; font-family:'IBM Plex Mono',monospace; color:var(--muted); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:4px;">Varianza</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:16px; font-weight:600;" id="cr-variance-total">€ 0</div>
+      </div>
+    </div>
+    <!-- Progress bar -->
+    <div style="margin-top:12px; height:6px; background:var(--bg2); border-radius:3px; overflow:hidden;">
+      <div id="cr-progress-bar" style="height:100%; background:var(--accent2); border-radius:3px; transition:width 0.3s; width:0%;"></div>
+    </div>
+    <div style="font-size:10px; font-family:'IBM Plex Mono',monospace; color:var(--muted); margin-top:4px; text-align:right;" id="cr-progress-label">0% del budget utilizzato</div>
+  </div>
+
+  <!-- CR Table per reparto -->
+  <div class="cr-table">
+    <div class="cr-table-header">
+      <div class="cr-th" style="text-align:left;">Reparto</div>
+      <div class="cr-th">Budget</div>
+      <div class="cr-th">Consuntivo</div>
+      <div class="cr-th">Varianza</div>
+    </div>
+    <div id="cr-rows"></div>
+  </div>
+
+  <!-- Note -->
+  <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px;">
+    <div class="card-title">NOTE COST REPORT</div>
+    <textarea class="form-input" id="cr-notes" rows="4" placeholder="Note, giustificazioni varianze, approvazioni..." style="width:100%; resize:none; font-size:13px; line-height:1.5;"></textarea>
+  </div>
+
+</div>
+
+<!-- ══════════════ AI ADVISOR PANEL ══════════════ -->
+<div class="panel" id="panel-ai">
+
+  <div class="quick-ai-grid">
+    <div class="quick-ai-btn" onclick="aiQuick('Analizza il mio budget e dimmi se è realistico per un commercial a Napoli.')">
+      <div class="qa-icon">🔍</div>
+      <div class="qa-title">Analizza Budget</div>
+      <div class="qa-desc">Feedback su realismo e rischi</div>
+    </div>
+    <div class="quick-ai-btn" onclick="aiQuick('Quali voci sto probabilmente sottostimando per un commercial pubblicitario?')">
+      <div class="qa-icon">⚠️</div>
+      <div class="qa-title">Rischi & Omissioni</div>
+      <div class="qa-desc">Voci spesso dimenticate</div>
+    </div>
+    <div class="quick-ai-btn" onclick="aiQuick('Come posso ottimizzare i costi mantenendo la qualità del commercial?')">
+      <div class="qa-icon">✂️</div>
+      <div class="qa-title">Ottimizza Costi</div>
+      <div class="qa-desc">Dove tagliare senza perdere qualità</div>
+    </div>
+    <div class="quick-ai-btn" onclick="aiQuick('Genera un report executive del budget da presentare al cliente.')">
+      <div class="qa-icon">📄</div>
+      <div class="qa-title">Report Cliente</div>
+      <div class="qa-desc">Sintesi da presentare</div>
+    </div>
+  </div>
+
+  <div class="ai-card">
+    <div class="ai-chat-area" id="ai-chat"></div>
+    <div class="ai-input-row">
+      <input class="ai-input" id="ai-input" placeholder="Chiedi qualcosa sul budget..." onkeydown="if(event.key==='Enter')aiSend()">
+      <button class="ai-send" id="ai-send-btn" onclick="aiSend()">→</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════ PROGETTO PANEL ══════════════ -->
+<div class="panel" id="panel-progetto">
+  <div class="project-card">
+    <div class="card-title">DATI PROGETTO</div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <div class="form-label">Titolo Commercial</div>
+        <input class="form-input" id="proj-title" placeholder="es. Pasta Rummo — Estate 2026" oninput="updateProjectChip()">
+      </div>
+      <div class="form-group">
+        <div class="form-label">Cliente</div>
+        <input class="form-input" id="proj-client" placeholder="Brand / Agenzia">
+      </div>
+      <div class="form-group">
+        <div class="form-label">Agenzia Creativa</div>
+        <input class="form-input" id="proj-agency" placeholder="Nome agenzia">
+      </div>
+      <div class="form-group">
+        <div class="form-label">Regista</div>
+        <input class="form-input" id="proj-director" placeholder="Nome regista">
+      </div>
+      <div class="form-group">
+        <div class="form-label">DOP</div>
+        <input class="form-input" id="proj-dop" placeholder="Nome DOP">
+      </div>
+      <div class="form-group">
+        <div class="form-label">Data Riprese (inizio)</div>
+        <input class="form-input" id="proj-date-start" type="date">
+      </div>
+      <div class="form-group">
+        <div class="form-label">Data Riprese (fine)</div>
+        <input class="form-input" id="proj-date-end" type="date">
+      </div>
+      <div class="form-group">
+        <div class="form-label">Giorni di Ripresa</div>
+        <input class="form-input" id="proj-days" type="number" placeholder="1" min="1">
+      </div>
+      <div class="form-group">
+        <div class="form-label">Formato</div>
+        <input class="form-input" id="proj-format" placeholder="es. 4K, 2.35:1">
+      </div>
+      <div class="form-group full">
+        <div class="form-label">Location principali</div>
+        <input class="form-input" id="proj-locations" placeholder="es. Piazza del Plebiscito, Porto di Napoli...">
+      </div>
+      <div class="form-group full">
+        <div class="form-label">Note generali</div>
+        <textarea class="form-input" id="proj-notes" rows="3" style="resize:none;" placeholder="Descrizione progetto, note speciali..."></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM BAR -->
+<div class="bottom-bar">
+  <button class="bar-btn" onclick="exportData()">💾 Esporta</button>
+  <button class="bar-btn primary" onclick="saveAll()">✓ Salva</button>
+</div>
+
+<script>
+// ─── DATA MODEL ─────────────────────────────────────────
+const SECTIONS = [
+  {
+    id: 'preprod',
+    name: '01 · Pre-Produzione',
+    rows: [
+      { desc: 'Sopralluoghi location', qty: 1, unit: '', price: 0 },
+      { desc: 'Location scouting', qty: 1, unit: '', price: 0 },
+      { desc: 'Casting', qty: 1, unit: '', price: 0 },
+      { desc: 'Direzione artistica / prep.', qty: 1, unit: '', price: 0 },
+      { desc: 'Permessi e autorizzazioni', qty: 1, unit: '', price: 0 },
+    ]
+  },
+  {
+    id: 'crew',
+    name: '02 · Crew & Cast',
+    rows: [
+      { desc: 'Regista', qty: 1, unit: 'gg', price: 0 },
+      { desc: 'DOP', qty: 1, unit: 'gg', price: 0 },
+      { desc: 'Operatore B-cam', qty: 1, unit: 'gg', price: 0 },
+      { desc: 'Direttore della fotografia (gaffer)', qty: 1, unit: 'gg', price: 0 },
+      { desc: 'Fonico', qty: 1, unit: 'gg', price: 0 },
+      { desc: 'Scenografo', qty: 1, unit: 'gg', price: 0 },
+      { desc: 'Make-up & Hair', qty: 1, unit: 'gg', price: 0 },
+      { desc: 'Stylist', qty: 1, unit: 'gg', price: 0 },
+      { desc: 'Protagonista / Talent', qty: 1, unit: 'gg', price: 0 },
+      { desc: 'Comparse', qty: 1, unit: 'gg', price: 0 },
+    ]
+  },
+  {
+    id: 'location',
+    name: '03 · Location & Set',
+    rows: [
+      { desc: 'Affitto location interna', qty: 1, unit: 'gg', price: 0 },
+      { desc: 'Permesso Comune / spazio pubblico', qty: 1, unit: '', price: 0 },
+      { desc: 'Scenografia e allestimento', qty: 1, unit: '', price: 0 },
+      { desc: 'Props e accessori', qty: 1, unit: '', price: 0 },
+      { desc: 'Catering crew (set)', qty: 1, unit: 'gg', price: 0 },
+      { desc: 'Hospitality / hotel crew', qty: 1, unit: 'notti', price: 0 },
+      { desc: 'Trasferimenti e logistica', qty: 1, unit: '', price: 0 },
+    ]
+  },
+  {
+    id: 'attrezzatura',
+    name: '04 · Attrezzatura & Mezzi',
+    rows: [
+      { desc: 'Camera package', qty: 1, unit: 'gg', price: 0 },
+      { desc: 'Ottiche', qty: 1, unit: 'gg', price: 0 },
+      { desc: 'Luci & grip', qty: 1, unit: 'gg', price: 0 },
+      { desc: 'Drone', qty: 1, unit: 'gg', price: 0 },
+      { desc: 'Steadicam / stabilizzatori', qty: 1, unit: 'gg', price: 0 },
+      { desc: 'Generatori', qty: 1, unit: 'gg', price: 0 },
+      { desc: 'Furgoni di produzione', qty: 1, unit: 'gg', price: 0 },
+    ]
+  },
+  {
+    id: 'post',
+    name: '05 · Post-Produzione',
+    rows: [
+      { desc: 'Montaggio', qty: 1, unit: '', price: 0 },
+      { desc: 'Color grading', qty: 1, unit: '', price: 0 },
+      { desc: 'Sound design & mix', qty: 1, unit: '', price: 0 },
+      { desc: 'Musica / licenza', qty: 1, unit: '', price: 0 },
+      { desc: 'VFX / grafica', qty: 1, unit: '', price: 0 },
+      { desc: 'Consegna e delivery', qty: 1, unit: '', price: 0 },
+    ]
+  },
+  {
+    id: 'varie',
+    name: '06 · Varie & Imprevisti',
+    rows: [
+      { desc: 'Assicurazione produzione', qty: 1, unit: '', price: 0 },
+      { desc: 'Spese bancarie e commissioni', qty: 1, unit: '', price: 0 },
+      { desc: 'Contingency (10%)', qty: 1, unit: '', price: 0 },
+    ]
+  }
+];
+
+let actualCosts = {};
+let collapsedSections = {};
+let aiHistory = [];
+let isAiLoading = false;
+
+// ─── INIT ─────────────────────────────────────────────
+function init() {
+  // Load from localStorage if available
+  try {
+    const saved = localStorage.getItem('budget_agent_data');
+    if (saved) {
+      const data = JSON.parse(saved);
+      if (data.sections) {
+        data.sections.forEach((s, i) => { if (SECTIONS[i]) SECTIONS[i].rows = s.rows; });
+      }
+      if (data.actual) actualCosts = data.actual;
+      if (data.project) {
+        Object.keys(data.project).forEach(k => {
+          const el = document.getElementById('proj-' + k);
+          if (el) el.value = data.project[k];
+        });
+        updateProjectChip();
+      }
+      if (data.crNotes) document.getElementById('cr-notes').value = data.crNotes;
+    }
+  } catch(e) {}
+
+  renderBudgetSections();
+  updateTotals();
+  updateCostReport();
+  updateCRDate();
+}
+
+// ─── RENDER BUDGET ────────────────────────────────────
+function renderBudgetSections() {
+  const container = document.getElementById('budget-sections');
+  container.innerHTML = '';
+
+  SECTIONS.forEach((section, si) => {
+    const isCollapsed = collapsedSections[section.id];
+    const sectionTotal = getSectionTotal(si);
+
+    const div = document.createElement('div');
+    div.className = 'budget-section';
+    div.id = 'section-' + section.id;
+
+    div.innerHTML = `
+      <div class="budget-section-header" onclick="toggleSection('${section.id}')">
+        <span class="section-name">${section.name}</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="section-total" id="sec-tot-${section.id}">${formatCurrency(sectionTotal)}</span>
+          <span class="section-toggle">${isCollapsed ? '▶' : '▼'}</span>
+        </div>
+      </div>
+      <div class="budget-rows" id="rows-${section.id}" ${isCollapsed ? 'style="display:none"' : ''}>
+        ${section.rows.map((row, ri) => renderRow(si, ri, row)).join('')}
+        <button class="add-row-btn" onclick="addRow(${si})">+ aggiungi voce</button>
+      </div>
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+function renderRow(si, ri, row) {
+  const total = (row.qty || 0) * (row.price || 0);
+  return `
+    <div class="budget-row" id="row-${si}-${ri}">
+      <input value="${row.desc || ''}" placeholder="Voce di spesa..." oninput="updateRow(${si},${ri},'desc',this.value)">
+      <input class="num" value="${row.qty || ''}" placeholder="Qtà" type="number" min="0" oninput="updateRow(${si},${ri},'qty',this.value)">
+      <input class="num" value="${row.price || ''}" placeholder="€/unit" type="number" min="0" oninput="updateRow(${si},${ri},'price',this.value)">
+      <div class="row-total" id="rowtot-${si}-${ri}">${formatCurrency(total)}</div>
+      <button class="del-btn" onclick="deleteRow(${si},${ri})">×</button>
+    </div>
+  `;
+}
+
+function updateRow(si, ri, field, value) {
+  if (field === 'qty' || field === 'price') {
+    SECTIONS[si].rows[ri][field] = parseFloat(value) || 0;
+  } else {
+    SECTIONS[si].rows[ri][field] = value;
+  }
+  const row = SECTIONS[si].rows[ri];
+  const total = (row.qty || 0) * (row.price || 0);
+  const totEl = document.getElementById(`rowtot-${si}-${ri}`);
+  if (totEl) totEl.textContent = formatCurrency(total);
+  updateTotals();
+  updateCostReport();
+}
+
+function addRow(si) {
+  SECTIONS[si].rows.push({ desc: '', qty: 1, unit: '', price: 0 });
+  renderBudgetSections();
+  updateTotals();
+  updateCostReport();
+}
+
+function deleteRow(si, ri) {
+  SECTIONS[si].rows.splice(ri, 1);
+  renderBudgetSections();
+  updateTotals();
+  updateCostReport();
+}
+
+function toggleSection(id) {
+  collapsedSections[id] = !collapsedSections[id];
+  const rows = document.getElementById('rows-' + id);
+  if (rows) rows.style.display = collapsedSections[id] ? 'none' : 'block';
+  const toggle = document.querySelector(`#section-${id} .section-toggle`);
+  if (toggle) toggle.textContent = collapsedSections[id] ? '▶' : '▼';
+}
+
+// ─── TOTALS ───────────────────────────────────────────
+function getSectionTotal(si) {
+  return SECTIONS[si].rows.reduce((sum, r) => sum + ((r.qty||0) * (r.price||0)), 0);
+}
+
+function updateTotals() {
+  const ids = ['preprod','crew','location','attrezzatura','post','varie'];
+  let grand = 0;
+  SECTIONS.forEach((s, i) => {
+    const tot = getSectionTotal(i);
+    grand += tot;
+    const el = document.getElementById('tot-' + s.id);
+    if (el) el.textContent = formatCurrency(tot);
+    const secEl = document.getElementById('sec-tot-' + s.id);
+    if (secEl) secEl.textContent = formatCurrency(tot);
+  });
+  document.getElementById('tot-grand').textContent = formatCurrency(grand);
+  document.getElementById('cr-budget-total').textContent = formatCurrency(grand);
+}
+
+// ─── COST REPORT ──────────────────────────────────────
+function updateCostReport() {
+  const crRows = document.getElementById('cr-rows');
+  if (!crRows) return;
+
+  let totalBudget = 0;
+  let totalActual = 0;
+
+  crRows.innerHTML = SECTIONS.map((s, si) => {
+    const budget = getSectionTotal(si);
+    const actual = parseFloat(actualCosts[s.id] || 0);
+    const variance = actual - budget;
+    totalBudget += budget;
+    totalActual += actual;
+
+    const vClass = variance > 0 ? 'over' : variance < 0 ? 'under' : 'even';
+    const vSign = variance > 0 ? '+' : '';
+
+    return `
+      <div class="cr-row">
+        <div class="cr-cell">${s.name}</div>
+        <div class="cr-cell">${formatCurrency(budget)}</div>
+        <div class="cr-cell">
+          <input class="cr-actual-input" type="number" value="${actual || ''}"
+            placeholder="0"
+            oninput="updateActual('${s.id}', this.value)"
+            style="width:80px;">
+        </div>
+        <div class="cr-cell ${vClass}">${vSign}${formatCurrency(variance)}</div>
+      </div>
+    `;
+  }).join('');
+
+  const variance = totalActual - totalBudget;
+  const vSign = variance > 0 ? '+' : '';
+  document.getElementById('cr-actual-total').textContent = formatCurrency(totalActual);
+  document.getElementById('cr-variance-total').textContent = vSign + formatCurrency(variance);
+  document.getElementById('cr-variance-total').style.color = variance > 0 ? 'var(--red)' : variance < 0 ? 'var(--green)' : 'var(--text)';
+
+  const pill = document.getElementById('cr-variance-pill');
+  if (variance > 0) {
+    pill.className = 'variance-pill over';
+    pill.textContent = '▲ OVER +' + formatCurrency(variance);
+  } else if (variance < 0) {
+    pill.className = 'variance-pill under';
+    pill.textContent = '▼ UNDER ' + formatCurrency(variance);
+  } else {
+    pill.className = 'variance-pill even';
+    pill.textContent = '± € 0';
+  }
+
+  const pct = totalBudget > 0 ? Math.min((totalActual / totalBudget) * 100, 100) : 0;
+  document.getElementById('cr-progress-bar').style.width = pct + '%';
+  document.getElementById('cr-progress-bar').style.background = pct > 100 ? 'var(--red)' : pct > 85 ? 'var(--yellow)' : 'var(--green)';
+  document.getElementById('cr-progress-label').textContent = Math.round(pct) + '% del budget utilizzato';
+}
+
+function updateActual(id, value) {
+  actualCosts[id] = parseFloat(value) || 0;
+  updateCostReport();
+}
+
+function updateCRDate() {
+  const el = document.getElementById('cr-date');
+  if (el) el.textContent = 'Aggiornato: ' + new Date().toLocaleDateString('it-IT', { day:'2-digit', month:'long', year:'numeric' });
+}
+
+// ─── AI ADVISOR ───────────────────────────────────────
+const AI_SYSTEM = `Sei un esperto line producer e financial controller specializzato in produzioni pubblicitarie (commercial) italiane.
+Conosci i costi di mercato italiani aggiornati per crew, attrezzatura, location, post-produzione.
+Sei pratico, diretto, dai consigli operativi concreti.
+Parli sempre in italiano.
+Quando analizzi un budget, considera il contesto delle produzioni pubblicitarie (non cinema o TV).
+Quando ti viene dato il budget completo, analizzalo e dai feedback specifici.`;
+
+function buildBudgetContext() {
+  const proj = {
+    title: document.getElementById('proj-title')?.value || 'N/D',
+    client: document.getElementById('proj-client')?.value || 'N/D',
+    days: document.getElementById('proj-days')?.value || 'N/D',
+    locations: document.getElementById('proj-locations')?.value || 'N/D',
+  };
+
+  let budgetSummary = `PROGETTO: ${proj.title} | Cliente: ${proj.client} | Giorni ripresa: ${proj.days} | Location: ${proj.locations}\n\nBUDGET ATTUALE:\n`;
+  let grandTotal = 0;
+  SECTIONS.forEach((s, si) => {
+    const tot = getSectionTotal(si);
+    grandTotal += tot;
+    budgetSummary += `${s.name}: ${formatCurrency(tot)}\n`;
+    s.rows.filter(r => r.price > 0).forEach(r => {
+      budgetSummary += `  - ${r.desc}: ${r.qty} × €${r.price} = ${formatCurrency(r.qty*r.price)}\n`;
+    });
+  });
+  budgetSummary += `\nTOTALE: ${formatCurrency(grandTotal)}`;
+  return budgetSummary;
+}
+
+async function aiSend() {
+  if (isAiLoading) return;
+  const input = document.getElementById('ai-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  await aiCall(text);
+}
+
+async function aiQuick(text) {
+  await aiCall(text);
+}
+
+async function aiCall(userMsg) {
+  if (isAiLoading) return;
+
+  const budgetCtx = buildBudgetContext();
+  const fullMsg = budgetCtx + '\n\n---\nDOMANDA: ' + userMsg;
+
+  addAiMsg('user', userMsg);
+  aiHistory.push({ role: 'user', content: fullMsg });
+
+  isAiLoading = true;
+  document.getElementById('ai-send-btn').disabled = true;
+
+  const typingId = showAiTyping();
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: AI_SYSTEM,
+        messages: aiHistory
+      })
+    });
+    const data = await resp.json();
+    const reply = data.content?.[0]?.text || 'Errore.';
+    removeAiTyping(typingId);
+    aiHistory.push({ role: 'assistant', content: reply });
+    addAiMsg('assistant', reply);
+  } catch(e) {
+    removeAiTyping(typingId);
+    addAiMsg('assistant', '⚠️ Errore di connessione.');
+  }
+
+  isAiLoading = false;
+  document.getElementById('ai-send-btn').disabled = false;
+}
+
+function addAiMsg(role, text) {
+  const chat = document.getElementById('ai-chat');
+  const div = document.createElement('div');
+  div.className = `ai-msg ${role}`;
+  const formatted = text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\n/g,'<br>');
+  div.innerHTML = `<div class="ai-bubble">${formatted}</div>`;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  showTab('ai');
+}
+
+let typCount = 0;
+function showAiTyping() {
+  const id = 'aityp-' + (++typCount);
+  const chat = document.getElementById('ai-chat');
+  const div = document.createElement('div');
+  div.className = 'ai-msg assistant'; div.id = id;
+  div.innerHTML = `<div class="ai-bubble"><div class="typing-dots"><div class="td"></div><div class="td"></div><div class="td"></div></div></div>`;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  return id;
+}
+
+function removeAiTyping(id) { document.getElementById(id)?.remove(); }
+
+// ─── UI HELPERS ───────────────────────────────────────
+function showTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', ['budget','costreport','ai','progetto'][i] === tab);
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  if (tab === 'costreport') updateCostReport();
+}
+
+function updateProjectChip() {
+  const val = document.getElementById('proj-title')?.value;
+  document.getElementById('proj-chip-name').textContent = val || 'Nuovo Progetto';
+}
+
+function editProject() { showTab('progetto'); }
+
+function formatCurrency(n) {
+  if (!n) return '€ 0';
+  return '€ ' + Math.round(n).toLocaleString('it-IT');
+}
+
+function saveAll() {
+  try {
+    const projData = {};
+    ['title','client','agency','director','dop','date-start','date-end','days','format','locations','notes'].forEach(k => {
+      projData[k] = document.getElementById('proj-' + k)?.value || '';
+    });
+    localStorage.setItem('budget_agent_data', JSON.stringify({
+      sections: SECTIONS.map(s => ({ rows: s.rows })),
+      actual: actualCosts,
+      project: projData,
+      crNotes: document.getElementById('cr-notes')?.value || ''
+    }));
+    const btn = document.querySelector('.bar-btn.primary');
+    btn.textContent = '✓ Salvato!';
+    setTimeout(() => btn.textContent = '✓ Salva', 1500);
+  } catch(e) {
+    alert('Errore nel salvataggio');
+  }
+}
+
+function exportData() {
+  let txt = '═══════════════════════════════\n';
+  txt += 'BUDGET COMMERCIAL — ' + (document.getElementById('proj-title')?.value || 'N/D') + '\n';
+  txt += '═══════════════════════════════\n\n';
+  txt += 'Cliente: ' + (document.getElementById('proj-client')?.value || 'N/D') + '\n';
+  txt += 'Giorni: ' + (document.getElementById('proj-days')?.value || 'N/D') + '\n\n';
+
+  let grand = 0;
+  SECTIONS.forEach((s, si) => {
+    const tot = getSectionTotal(si);
+    grand += tot;
+    txt += `\n${s.name}\n${'─'.repeat(40)}\n`;
+    s.rows.forEach(r => {
+      if (r.desc) txt += `  ${r.desc.padEnd(28)} ${r.qty}x €${r.price} = ${formatCurrency(r.qty*r.price)}\n`;
+    });
+    txt += `${'─'.repeat(40)}\nSubtotale: ${formatCurrency(tot)}\n`;
+  });
+
+  txt += `\n${'═'.repeat(40)}\nTOTALE BUDGET: ${formatCurrency(grand)}\n${'═'.repeat(40)}\n`;
+
+  const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'budget_commercial.txt';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ─── BOOT ─────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>

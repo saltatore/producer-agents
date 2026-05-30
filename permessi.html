@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Agente Permessi · Comune di Napoli</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: rgba(255,255,255,0.08);
+    --accent: #e8c96d;
+    --accent2: #c4a44a;
+    --text: #f0ede6;
+    --muted: #7a7a8a;
+    --red: #e86d6d;
+    --green: #6de8a0;
+    --blue: #6d9de8;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* Header */
+  .header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    position: sticky;
+    top: 0;
+    background: rgba(10,10,15,0.95);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+
+  .header-icon {
+    width: 40px; height: 40px;
+    background: var(--accent);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .header-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--text);
+  }
+
+  .header-sub {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .status-dot {
+    width: 7px; height: 7px;
+    background: var(--green);
+    border-radius: 50%;
+    margin-left: auto;
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* Mode tabs */
+  .mode-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .mode-tabs::-webkit-scrollbar { display: none; }
+
+  .mode-tab {
+    flex-shrink: 0;
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .mode-tab.active {
+    background: var(--accent);
+    color: #0a0a0f;
+    border-color: var(--accent);
+    font-weight: 500;
+  }
+
+  /* Quick actions */
+  .quick-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 16px;
+  }
+
+  .quick-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .quick-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .quick-card:active, .quick-card:hover {
+    border-color: var(--accent);
+    background: var(--surface2);
+    transform: translateY(-1px);
+  }
+
+  .quick-card:active::before, .quick-card:hover::before { opacity: 1; }
+
+  .quick-icon { font-size: 22px; margin-bottom: 8px; }
+  .quick-title { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+  .quick-desc { font-size: 11px; color: var(--muted); line-height: 1.4; }
+
+  /* Section label */
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0 16px 10px;
+  }
+
+  /* Chat area */
+  .chat-area {
+    padding: 0 16px 120px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 200px;
+  }
+
+  .msg {
+    max-width: 88%;
+    animation: fadeUp 0.3s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg.user { align-self: flex-end; }
+  .msg.assistant { align-self: flex-start; }
+
+  .msg-bubble {
+    padding: 12px 15px;
+    border-radius: 16px;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .msg.user .msg-bubble {
+    background: var(--accent);
+    color: #0a0a0f;
+    border-bottom-right-radius: 4px;
+    font-weight: 400;
+  }
+
+  .msg.assistant .msg-bubble {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+    color: var(--text);
+  }
+
+  .msg-time {
+    font-size: 10px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    margin-top: 4px;
+    padding: 0 4px;
+  }
+
+  .msg.user .msg-time { text-align: right; }
+
+  /* Document preview inside bubble */
+  .doc-preview {
+    margin-top: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+  }
+
+  .doc-preview-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .doc-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: var(--accent);
+    color: #0a0a0f;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+
+  .doc-preview-title { font-size: 12px; font-weight: 500; }
+  .doc-preview-body { font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .doc-preview-body strong { color: var(--text); }
+
+  .copy-btn {
+    margin-top: 10px;
+    padding: 7px 12px;
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: 8px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .copy-btn:active { background: var(--accent); color: #0a0a0f; }
+
+  /* Typing indicator */
+  .typing {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 12px 15px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    border-bottom-left-radius: 4px;
+    width: fit-content;
+  }
+
+  .typing-dot {
+    width: 6px; height: 6px;
+    background: var(--muted);
+    border-radius: 50%;
+    animation: typingBounce 1.2s ease-in-out infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes typingBounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-5px); opacity: 1; }
+  }
+
+  /* Input bar */
+  .input-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(10,10,15,0.97);
+    backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border);
+    padding: 12px 16px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+
+  .input-field {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 11px 14px;
+    color: var(--text);
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    resize: none;
+    max-height: 100px;
+    outline: none;
+    transition: border-color 0.2s;
+    line-height: 1.4;
+  }
+
+  .input-field:focus { border-color: var(--accent); }
+  .input-field::placeholder { color: var(--muted); }
+
+  .send-btn {
+    width: 44px; height: 44px;
+    background: var(--accent);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    font-size: 18px;
+  }
+
+  .send-btn:active { transform: scale(0.92); background: var(--accent2); }
+  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Checklist style response */
+  .checklist { list-style: none; margin-top: 8px; }
+  .checklist li {
+    padding: 5px 0;
+    font-size: 13px;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    color: var(--text);
+  }
+  .checklist li::before {
+    content: '◆';
+    color: var(--accent);
+    font-size: 8px;
+    margin-top: 4px;
+    flex-shrink: 0;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0 12px;
+  }
+
+  /* Welcome state */
+  .welcome {
+    padding: 24px 16px 12px;
+    text-align: center;
+  }
+
+  .welcome-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 900;
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+
+  .welcome-title span { color: var(--accent); }
+
+  .welcome-sub {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+    max-width: 300px;
+    margin: 0 auto 20px;
+  }
+
+  /* Info chip */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    margin: 3px;
+  }
+
+  .chips-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-icon">🏛️</div>
+  <div>
+    <div class="header-title">Agente Permessi</div>
+    <div class="header-sub">Comune di Napoli · Ufficio Cinema</div>
+  </div>
+  <div class="status-dot"></div>
+</div>
+
+<!-- MODE TABS -->
+<div class="mode-tabs">
+  <button class="mode-tab active" onclick="setMode('chat')">💬 Assistente</button>
+  <button class="mode-tab" onclick="setMode('richiesta')">📄 Genera Richiesta</button>
+  <button class="mode-tab" onclick="setMode('checklist')">✅ Checklist</button>
+  <button class="mode-tab" onclick="setMode('contatti')">📞 Contatti</button>
+</div>
+
+<!-- MAIN CONTENT -->
+<div id="main">
+
+  <!-- WELCOME + QUICK ACTIONS (visible only at inizio) -->
+  <div id="welcome-section" class="welcome">
+    <div class="welcome-title">Ciao, <span>Producer</span> 👋</div>
+    <div class="welcome-sub">Sono il tuo agente per i permessi di ripresa con il Comune di Napoli. Cosa ti serve?</div>
+    <div class="chips-row">
+      <span class="chip">📍 Spazi pubblici</span>
+      <span class="chip">🚗 Blocchi traffico</span>
+      <span class="chip">🌙 Riprese notturne</span>
+      <span class="chip">🏛️ Beni culturali</span>
+    </div>
+  </div>
+
+  <div class="section-label" id="quick-label">AZIONI RAPIDE</div>
+  <div class="quick-grid" id="quick-grid">
+    <div class="quick-card" onclick="sendQuick('Cosa serve per riprendere in una piazza pubblica a Napoli?')">
+      <div class="quick-icon">🏟️</div>
+      <div class="quick-title">Piazze & Strade</div>
+      <div class="quick-desc">Spazi pubblici, vie del centro storico</div>
+    </div>
+    <div class="quick-card" onclick="sendQuick('Ho bisogno di bloccare il traffico per le riprese. Come funziona la procedura?')">
+      <div class="quick-icon">🚦</div>
+      <div class="quick-title">Blocco Traffico</div>
+      <div class="quick-desc">Chiusura vie, deviazioni, ZTL</div>
+    </div>
+    <div class="quick-card" onclick="sendQuick('Voglio fare riprese notturne in esterno a Napoli. Quali permessi servono?')">
+      <div class="quick-icon">🌙</div>
+      <div class="quick-title">Riprese Notturne</div>
+      <div class="quick-desc">Dopo le 22:00, deroga rumore</div>
+    </div>
+    <div class="quick-card" onclick="sendQuick('Come si ottiene il permesso per riprendere vicino a beni culturali o monumenti a Napoli?')">
+      <div class="quick-icon">🏛️</div>
+      <div class="quick-title">Monumenti & Beni</div>
+      <div class="quick-desc">Soprintendenza, siti UNESCO</div>
+    </div>
+  </div>
+
+  <!-- CHAT -->
+  <div class="section-label" id="chat-label" style="margin-top:8px;">CONVERSAZIONE</div>
+  <div class="chat-area" id="chat-area">
+    <!-- messages here -->
+  </div>
+
+  <!-- CHECKLIST PANEL (hidden by default) -->
+  <div id="checklist-panel" class="hidden" style="padding:16px;">
+    <div style="font-family:'Playfair Display',serif; font-size:18px; font-weight:700; margin-bottom:4px;">Checklist Permessi</div>
+    <div style="font-size:12px; color:var(--muted); margin-bottom:16px; font-family:'DM Mono',monospace;">COMUNE DI NAPOLI · UFFICIO CINEMA</div>
+    <div class="divider"></div>
+
+    <div style="font-size:12px; font-weight:500; color:var(--accent); margin-bottom:8px; font-family:'DM Mono',monospace; letter-spacing:0.08em;">DOCUMENTI OBBLIGATORI</div>
+    <ul class="checklist" id="docs-list">
+      <li>Richiesta scritta su carta intestata della società</li>
+      <li>Visura camerale aggiornata (non oltre 6 mesi)</li>
+      <li>Documento d'identità del legale rappresentante</li>
+      <li>Polizza assicurativa RC (minimo €2.000.000)</li>
+      <li>Piano di sicurezza / Safety plan</li>
+      <li>Lista crew completa con mansioni</li>
+      <li>Lista mezzi e targhe dei veicoli di produzione</li>
+      <li>Planimetria o descrizione dettagliata delle location</li>
+      <li>Storyboard o treatment (in alcuni casi)</li>
+      <li>Autorizzazione del proprietario se spazio privato prospiciente pubblico</li>
+    </ul>
+
+    <div class="divider" style="margin-top:16px;"></div>
+    <div style="font-size:12px; font-weight:500; color:var(--accent); margin-bottom:8px; font-family:'DM Mono',monospace; letter-spacing:0.08em;">TEMPISTICHE</div>
+    <ul class="checklist">
+      <li>Riprese standard: presentare almeno <strong>10 giorni lavorativi</strong> prima</li>
+      <li>Blocchi traffico / ZTL: almeno <strong>15 giorni lavorativi</strong> prima</li>
+      <li>Riprese notturne (deroga rumore): almeno <strong>20 giorni</strong> prima</li>
+      <li>Beni culturali (Soprintendenza): almeno <strong>30 giorni</strong> prima</li>
+    </ul>
+
+    <div class="divider" style="margin-top:16px;"></div>
+    <div style="font-size:12px; font-weight:500; color:var(--accent); margin-bottom:8px; font-family:'DM Mono',monospace; letter-spacing:0.08em;">UFFICI COINVOLTI</div>
+    <ul class="checklist">
+      <li>Ufficio Cinema – Comune di Napoli (ufficio.cinema@comune.napoli.it)</li>
+      <li>Polizia Municipale (per chiusure strade)</li>
+      <li>ANAC / Soprintendenza (per beni tutelati)</li>
+      <li>ARPA Campania (deroga inquinamento acustico)</li>
+      <li>Autorità Portuale (per riprese al porto)</li>
+    </ul>
+  </div>
+
+  <!-- CONTATTI PANEL -->
+  <div id="contatti-panel" class="hidden" style="padding:16px;">
+    <div style="font-family:'Playfair Display',serif; font-size:18px; font-weight:700; margin-bottom:16px;">Riferimenti Utili</div>
+
+    <div style="background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:12px;">
+      <div style="font-size:11px; color:var(--accent); font-family:'DM Mono',monospace; letter-spacing:0.08em; margin-bottom:6px;">UFFICIO CINEMA NAPOLI</div>
+      <div style="font-size:14px; font-weight:500; margin-bottom:4px;">Comune di Napoli</div>
+      <div style="font-size:13px; color:var(--muted);">Via San Giacomo, 24 — 80133 Napoli</div>
+      <div style="font-size:13px; color:var(--muted); margin-top:4px;">📧 ufficio.cinema@comune.napoli.it</div>
+      <div style="font-size:13px; color:var(--muted);">🌐 www.comune.napoli.it</div>
+    </div>
+
+    <div style="background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:12px;">
+      <div style="font-size:11px; color:var(--accent); font-family:'DM Mono',monospace; letter-spacing:0.08em; margin-bottom:6px;">POLIZIA MUNICIPALE</div>
+      <div style="font-size:14px; font-weight:500; margin-bottom:4px;">Comando PM Napoli</div>
+      <div style="font-size:13px; color:var(--muted);">Per chiusure strade e gestione traffico</div>
+      <div style="font-size:13px; color:var(--muted); margin-top:4px;">📞 081 7953111</div>
+    </div>
+
+    <div style="background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:12px;">
+      <div style="font-size:11px; color:var(--accent); font-family:'DM Mono',monospace; letter-spacing:0.08em; margin-bottom:6px;">SOPRINTENDENZA</div>
+      <div style="font-size:14px; font-weight:500; margin-bottom:4px;">Soprintendenza ABAP Napoli</div>
+      <div style="font-size:13px; color:var(--muted);">Palazzo Reale, Piazza del Plebiscito</div>
+      <div style="font-size:13px; color:var(--muted); margin-top:4px;">📧 mbac-san@beniculturali.it</div>
+    </div>
+
+    <div style="background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px;">
+      <div style="font-size:11px; color:var(--accent); font-family:'DM Mono',monospace; letter-spacing:0.08em; margin-bottom:6px;">FILM COMMISSION</div>
+      <div style="font-size:14px; font-weight:500; margin-bottom:4px;">Campania Film Commission</div>
+      <div style="font-size:13px; color:var(--muted);">Supporto e facilitazione permessi</div>
+      <div style="font-size:13px; color:var(--muted); margin-top:4px;">📧 info@campaniafilmcommission.it</div>
+      <div style="font-size:13px; color:var(--muted);">🌐 www.campaniafilmcommission.it</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- INPUT BAR -->
+<div class="input-bar">
+  <div class="input-row">
+    <textarea
+      id="input"
+      class="input-field"
+      placeholder="Chiedi qualcosa sui permessi..."
+      rows="1"
+      onkeydown="handleKey(event)"
+      oninput="autoResize(this)"
+    ></textarea>
+    <button class="send-btn" id="send-btn" onclick="sendMessage()">→</button>
+  </div>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────
+let currentMode = 'chat';
+let isLoading = false;
+let conversationHistory = [];
+
+const SYSTEM_PROMPT = `Sei un agente esperto in permessi di ripresa per produzioni pubblicitarie (commercial) a Napoli, Italia.
+Conosci perfettamente:
+- La procedura dell'Ufficio Cinema del Comune di Napoli
+- I moduli e documenti necessari
+- I tempi di attesa e le tempistiche
+- Gli uffici competenti (Polizia Municipale, Soprintendenza, ARPA, Autorità Portuale)
+- La Campania Film Commission e come può supportare le produzioni
+- Le specificità di Napoli: centro storico UNESCO, aree portuali, strade a traffico limitato, quartieri storici
+- Le deroghe per riprese notturne e rumore
+- I costi e i diritti fissi eventualmente richiesti
+
+Rispondi SEMPRE in italiano, in modo pratico e diretto. 
+Sei un collega esperto, non un avvocato — dai consigli concreti e operativi.
+Quando generi documenti o lettere, usa un formato formale professionale italiano.
+Tieni le risposte concise ma complete. Usa elenchi puntati quando è utile alla chiarezza.
+Quando si tratta di generare una lettera di richiesta permessi, includi tutti i campi necessari con [PLACEHOLDER] per i dati da compilare.`;
+
+// ─── MODE SWITCHING ───────────────────────────────────────
+function setMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-tab').forEach((t,i) => {
+    t.classList.toggle('active', ['chat','richiesta','checklist','contatti'][i] === mode);
+  });
+
+  const checklistPanel = document.getElementById('checklist-panel');
+  const contattiPanel = document.getElementById('contatti-panel');
+  const quickGrid = document.getElementById('quick-grid');
+  const quickLabel = document.getElementById('quick-label');
+  const welcomeSection = document.getElementById('welcome-section');
+  const chatArea = document.getElementById('chat-area');
+  const chatLabel = document.getElementById('chat-label');
+
+  // Reset all
+  checklistPanel.classList.add('hidden');
+  contattiPanel.classList.add('hidden');
+
+  if (mode === 'checklist') {
+    quickGrid.classList.add('hidden');
+    quickLabel.classList.add('hidden');
+    welcomeSection.classList.add('hidden');
+    chatArea.classList.add('hidden');
+    chatLabel.classList.add('hidden');
+    checklistPanel.classList.remove('hidden');
+  } else if (mode === 'contatti') {
+    quickGrid.classList.add('hidden');
+    quickLabel.classList.add('hidden');
+    welcomeSection.classList.add('hidden');
+    chatArea.classList.add('hidden');
+    chatLabel.classList.add('hidden');
+    contattiPanel.classList.remove('hidden');
+  } else if (mode === 'richiesta') {
+    quickGrid.classList.add('hidden');
+    quickLabel.classList.add('hidden');
+    welcomeSection.classList.add('hidden');
+    chatArea.classList.remove('hidden');
+    chatLabel.classList.remove('hidden');
+    sendQuick('Genera una lettera di richiesta permesso riprese per un commercial pubblicitario al Comune di Napoli. Includi tutti i campi con i placeholder da compilare.');
+  } else {
+    // chat mode
+    if (conversationHistory.length === 0) {
+      welcomeSection.classList.remove('hidden');
+      quickGrid.classList.remove('hidden');
+      quickLabel.classList.remove('hidden');
+    }
+    chatArea.classList.remove('hidden');
+    chatLabel.classList.remove('hidden');
+  }
+}
+
+// ─── MESSAGING ───────────────────────────────────────────
+function sendQuick(text) {
+  document.getElementById('input').value = text;
+  sendMessage();
+}
+
+async function sendMessage() {
+  if (isLoading) return;
+  const input = document.getElementById('input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  // Hide welcome on first message
+  document.getElementById('welcome-section').classList.add('hidden');
+  document.getElementById('quick-grid').classList.add('hidden');
+  document.getElementById('quick-label').classList.add('hidden');
+  document.getElementById('chat-area').classList.remove('hidden');
+  document.getElementById('chat-label').classList.remove('hidden');
+
+  input.value = '';
+  input.style.height = 'auto';
+
+  addMessage('user', text);
+  conversationHistory.push({ role: 'user', content: text });
+
+  isLoading = true;
+  document.getElementById('send-btn').disabled = true;
+  const typingId = showTyping();
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: SYSTEM_PROMPT,
+        messages: conversationHistory
+      })
+    });
+
+    const data = await response.json();
+    removeTyping(typingId);
+
+    const reply = data.content?.[0]?.text || 'Errore nella risposta.';
+    conversationHistory.push({ role: 'assistant', content: reply });
+
+    // Check if it's a letter/document
+    const isDoc = reply.includes('[') && reply.includes(']') &&
+      (reply.toLowerCase().includes('oggetto:') || reply.toLowerCase().includes('spett.') || reply.toLowerCase().includes('alla cortese'));
+
+    addMessage('assistant', reply, isDoc);
+
+  } catch (err) {
+    removeTyping(typingId);
+    addMessage('assistant', '⚠️ Errore di connessione. Controlla la rete e riprova.');
+  }
+
+  isLoading = false;
+  document.getElementById('send-btn').disabled = false;
+}
+
+function addMessage(role, text, isDocument = false) {
+  const chat = document.getElementById('chat-area');
+  const now = new Date().toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' });
+
+  const msg = document.createElement('div');
+  msg.className = `msg ${role}`;
+
+  if (role === 'user') {
+    msg.innerHTML = `
+      <div class="msg-bubble">${escapeHtml(text)}</div>
+      <div class="msg-time">${now}</div>
+    `;
+  } else if (isDocument) {
+    const formattedText = formatText(text);
+    msg.innerHTML = `
+      <div class="msg-bubble">
+        ✅ Ecco la lettera generata:
+        <div class="doc-preview">
+          <div class="doc-preview-header">
+            <span class="doc-badge">DOCUMENTO</span>
+            <span class="doc-preview-title">Richiesta Permesso Riprese</span>
+          </div>
+          <div class="doc-preview-body" style="white-space:pre-wrap; font-family:'DM Mono',monospace; font-size:11px;">${formattedText}</div>
+        </div>
+        <button class="copy-btn" onclick="copyText(this, \`${text.replace(/`/g,"'")}\`)">📋 Copia testo</button>
+      </div>
+      <div class="msg-time">${now}</div>
+    `;
+  } else {
+    const formattedText = formatText(text);
+    msg.innerHTML = `
+      <div class="msg-bubble">${formattedText}</div>
+      <div class="msg-time">${now}</div>
+    `;
+  }
+
+  chat.appendChild(msg);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function formatText(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/^- (.+)$/gm, '• $1')
+    .replace(/\n/g, '<br>');
+}
+
+function escapeHtml(text) {
+  return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function copyText(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✅ Copiato!';
+    setTimeout(() => btn.textContent = '📋 Copia testo', 2000);
+  }).catch(() => {
+    btn.textContent = '❌ Errore copia';
+  });
+}
+
+let typingCounter = 0;
+function showTyping() {
+  const id = 'typing-' + (++typingCounter);
+  const chat = document.getElementById('chat-area');
+  const div = document.createElement('div');
+  div.className = 'msg assistant';
+  div.id = id;
+  div.innerHTML = `<div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  return id;
+}
+
+function removeTyping(id) {
+  document.getElementById(id)?.remove();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+</script>
+</body>
+</html>

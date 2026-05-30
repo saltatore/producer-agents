@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Producer">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgZmlsbD0iIzBkMGQxMiIvPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxODAiIGhlaWdodD0iNiIgZmlsbD0iI2U4Yjg0YiIvPjx0ZXh0IHg9IjkwIiB5PSI4NSIgZm9udC1mYW1pbHk9Ikdlb3JnaWEsc2VyaWYiIGZvbnQtc2l6ZT0iNTIiIGZvbnQtd2VpZ2h0PSI5MDAiIGZpbGw9IiNmMGVkZTYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPlA8L3RleHQ+PHRleHQgeD0iOTAiIHk9IjEzMCIgZm9udC1mYW1pbHk9Im1vbm9zcGFjZSIgZm9udC1zaXplPSIxNiIgZmlsbD0iI2U4Yzk2ZCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgbGV0dGVyLXNwYWNpbmc9IjQiPkFHRU5UUzwvdGV4dD48L3N2Zz4=">
+<meta name="theme-color" content="#0d0d12">
+<title>Producer Agents</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html{-webkit-text-size-adjust:100%;}
+body{background:#0d0d12;font-family:"IBM Plex Mono",monospace;min-height:100vh;min-height:100dvh;padding-top:env(safe-area-inset-top);padding-bottom:calc(env(safe-area-inset-bottom) + 24px);-webkit-overflow-scrolling:touch;}
+#splash{position:fixed;inset:0;background:#0d0d12;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;opacity:1;transition:opacity 0.5s ease;}
+#splash.hide{opacity:0;pointer-events:none;}
+.splash-p{font-family:"Syne",sans-serif;font-size:44px;font-weight:800;color:#f0ede6;letter-spacing:-0.04em;}
+.splash-p span{color:#e8c96d;}
+.splash-sub{font-size:10px;letter-spacing:0.16em;color:#4a4a5a;margin-top:8px;text-transform:uppercase;}
+.splash-bar{height:3px;background:linear-gradient(90deg,#e8b84b,#c8380a);border-radius:2px;margin-top:28px;animation:grow 1.2s ease forwards;}
+@keyframes grow{from{width:0}to{width:110px}}
+.header{padding:18px 20px 14px;border-bottom:1px solid rgba(255,255,255,0.07);}
+.header-title{font-family:"Syne",sans-serif;font-size:21px;font-weight:800;color:#f0ede6;letter-spacing:-0.03em;}
+.header-title span{color:#e8c96d;}
+.header-sub{font-size:10px;color:#4a4a5a;letter-spacing:0.12em;text-transform:uppercase;margin-top:3px;}
+.content{padding:18px 16px 0;display:flex;flex-direction:column;gap:14px;}
+#install-banner{background:#1a1a2e;border:1px solid rgba(109,157,232,0.25);border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;}
+#install-banner.hidden{display:none;}
+.banner-icon{font-size:22px;flex-shrink:0;}
+.banner-text{font-size:12px;color:#8a9ab0;line-height:1.6;}
+.banner-text strong{color:#6d9de8;}
+.banner-close{margin-left:auto;font-size:20px;color:#4a4a5a;flex-shrink:0;padding:0 4px;line-height:1;}
+a.agent-card{text-decoration:none;display:block;background:#13131e;border:1px solid rgba(255,255,255,0.08);border-radius:20px;overflow:hidden;transition:transform 0.12s,opacity 0.12s;}
+a.agent-card:active{transform:scale(0.97);opacity:0.85;}
+.card-stripe{height:4px;}
+.card-body{padding:20px;}
+.card-icon{font-size:32px;margin-bottom:12px;}
+.card-title{font-family:"Syne",sans-serif;font-size:21px;font-weight:800;color:#f0ede6;margin-bottom:5px;letter-spacing:-0.02em;}
+.card-desc{font-size:12px;color:#6a6a7a;line-height:1.65;margin-bottom:14px;}
+.pills{display:flex;flex-wrap:wrap;gap:6px;}
+.pill{font-size:10px;padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,0.1);color:#7a7a8a;}
+.card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.06);}
+.open-lbl{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;font-weight:500;}
+.coming{border:1px dashed rgba(255,255,255,0.07);border-radius:20px;padding:22px;text-align:center;}
+</style>
+</head>
+<body>
+<div id="splash">
+  <div class="splash-p">PRO<span>DU</span>CER</div>
+  <div class="splash-sub">Agents · Napoli</div>
+  <div class="splash-bar"></div>
+</div>
+<div class="header">
+  <div class="header-title">PRODUCER <span>AGENTS</span></div>
+  <div class="header-sub">Commercial Production · Napoli</div>
+</div>
+<div class="content">
+  <div id="install-banner">
+    <div class="banner-icon">📲</div>
+    <div class="banner-text"><strong>Aggiungi alla Home</strong> — tap su Condividi (□↑) poi <strong>"Aggiungi a schermata Home"</strong>.</div>
+    <div class="banner-close" onclick="closeBanner()">×</div>
+  </div>
+  <a class="agent-card" href="budget.html">
+    <div class="card-stripe" style="background:linear-gradient(90deg,#e8b84b,#c8380a);"></div>
+    <div class="card-body">
+      <div class="card-icon">📊</div>
+      <div class="card-title">Budget Agent</div>
+      <div class="card-desc">Budget per reparti, cost report con varianze in tempo reale, AI advisor che analizza i tuoi numeri.</div>
+      <div class="pills"><span class="pill">Budget</span><span class="pill">Cost Report</span><span class="pill">Varianze</span><span class="pill">AI Advisor</span></div>
+      <div class="card-footer"><span class="open-lbl" style="color:#e8b84b;">Apri agente</span><span style="color:#e8b84b;font-size:20px;">→</span></div>
+    </div>
+  </a>
+  <a class="agent-card" href="permessi.html">
+    <div class="card-stripe" style="background:linear-gradient(90deg,#6d9de8,#6de8a0);"></div>
+    <div class="card-body">
+      <div class="card-icon">🏛️</div>
+      <div class="card-title">Agente Permessi</div>
+      <div class="card-desc">Permessi di ripresa con il Comune di Napoli. Genera lettere, checklist documenti, contatti Ufficio Cinema.</div>
+      <div class="pills"><span class="pill">Comune Napoli</span><span class="pill">Lettere</span><span class="pill">Checklist</span><span class="pill">Soprintendenza</span></div>
+      <div class="card-footer"><span class="open-lbl" style="color:#6d9de8;">Apri agente</span><span style="color:#6d9de8;font-size:20px;">→</span></div>
+    </div>
+  </a>
+  <div class="coming">
+    <div style="font-size:24px;margin-bottom:10px;opacity:0.3;">🗓️ &nbsp; 🎬 &nbsp; 👥</div>
+    <div style="font-family:Syne,sans-serif;font-size:14px;color:#3a3a4a;margin-bottom:5px;font-weight:700;">Prossimamente</div>
+    <div style="font-size:11px;color:#2a2a3a;line-height:1.7;">Scheduling · Call Sheet · Crew & Deal Memo</div>
+  </div>
+</div>
+<script>
+window.addEventListener("load", function(){ setTimeout(function(){ document.getElementById("splash").classList.add("hide"); }, 1300); });
+if(window.navigator.standalone === true){ document.getElementById("install-banner").classList.add("hidden"); }
+function closeBanner(){ document.getElementById("install-banner").classList.add("hidden"); try{ localStorage.setItem("banner_closed","1"); }catch(e){} }
+try{ if(localStorage.getItem("banner_closed")==="1"){ document.getElementById("install-banner").classList.add("hidden"); } }catch(e){}
+</script>
+</body>
+</html>
