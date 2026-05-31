@@ -240,7 +240,7 @@ body{background:var(--bg);color:var(--text);font-family:"IBM Plex Sans",sans-ser
   <button class="bar-btn" onclick="openExportMenu()">📤 Esporta</button>
   <button class="bar-btn primary" onclick="saveAll()">✓ Salva</button>
 </div>
-<input type="file" id="xlsx-import" accept=".xlsx,.xls" style="display:none" onchange="handleXlsxImport(event)">
+<input type="file" id="xlsx-import" accept=".xlsx,.xls,.pdf,image/*,.csv,.txt" style="display:none" onchange="handleImport(event)">
 <div id="export-menu" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9998;display:none;align-items:flex-end;justify-content:center;" onclick="if(event.target===this)closeExportMenu()">
   <div style="background:var(--surface);border-radius:18px 18px 0 0;padding:20px;width:100%;max-width:480px;padding-bottom:max(20px,env(safe-area-inset-bottom));">
     <div style="font-family:Syne,sans-serif;font-size:16px;font-weight:700;margin-bottom:14px;">Esporta preventivo</div>
@@ -590,22 +590,43 @@ function exportClean(){
 }
 
 // IMPORT: legge un xlsx. Se è formato Collateral (sheet PRV_ITA) → mappa preciso. Altrimenti → AI best-effort.
-function handleXlsxImport(event){
+function handleImport(event){
   const file = event.target.files[0];
   event.target.value="";
   if(!file) return;
-  const reader=new FileReader();
-  reader.onload=function(e){
-    try{
-      const wb=XLSX.read(new Uint8Array(e.target.result),{type:"array"});
-      if(wb.SheetNames.includes(SHEET_NAME)){
-        importCollateral(wb);
-      } else {
-        importGeneric(wb);
-      }
-    }catch(err){ alert("Errore lettura file: "+err.message); }
-  };
-  reader.readAsArrayBuffer(file);
+  const name = file.name.toLowerCase();
+  const isXlsx = name.endsWith(".xlsx") || name.endsWith(".xls");
+  const isPdf = file.type==="application/pdf" || name.endsWith(".pdf");
+  const isImage = file.type.startsWith("image/");
+  const isText = file.type.startsWith("text/") || name.endsWith(".csv") || name.endsWith(".txt");
+
+  if(isXlsx){
+    const reader=new FileReader();
+    reader.onload=function(e){
+      try{
+        const wb=XLSX.read(new Uint8Array(e.target.result),{type:"array"});
+        if(wb.SheetNames.includes(SHEET_NAME)){ importCollateral(wb); }
+        else { const csv=XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]]).slice(0,12000); importViaAI([{type:"text",text:"Contenuto del foglio Excel (CSV):\n"+csv}], file.name); }
+      }catch(err){ alert("Errore lettura Excel: "+err.message); }
+    };
+    reader.readAsArrayBuffer(file);
+  } else if(isPdf || isImage){
+    const reader=new FileReader();
+    reader.onload=function(e){
+      const b64=String(e.target.result).split(",")[1]||"";
+      const block = isPdf
+        ? {type:"document",source:{type:"base64",media_type:"application/pdf",data:b64}}
+        : {type:"image",source:{type:"base64",media_type:file.type,data:b64}};
+      importViaAI([block], file.name);
+    };
+    reader.readAsDataURL(file);
+  } else if(isText){
+    const reader=new FileReader();
+    reader.onload=function(e){ importViaAI([{type:"text",text:"Contenuto file:\n"+String(e.target.result).slice(0,12000)}], file.name); };
+    reader.readAsText(file);
+  } else {
+    alert("Formato non supportato. Usa Excel, PDF, immagine, CSV o testo.");
+  }
 }
 
 function importCollateral(wb){
@@ -632,16 +653,99 @@ function importCollateral(wb){
   alert("✅ Importato dal formato Collateral: "+imported+" voci aggiornate.");
 }
 
-// IMPORT GENERICO via AI: estrae il testo del foglio e chiede all'AI di mapparlo
-async function importGeneric(wb){
-  if(!getApiKey()){ alert("Per importare un formato diverso serve l'API key (AI). Tap sull'ingranaggio per inserirla."); return; }
-  const sheet=wb.Sheets[wb.SheetNames[0]];
-  const csv=XLSX.utils.sheet_to_csv(sheet).slice(0,8000);
-  if(!confirm("Questo file non è in formato Collateral. Provo a interpretarlo con l'AI e a mapparlo sulle categorie A-T. Procedo?")) return;
-  addAiMsg("assistant","📥 Sto analizzando il file importato...");
+// IMPORT VIA AI: PDF / immagine / Excel non-Collateral / testo → estrazione strutturata JSON
+const CAT_NAMES_IMPORT = "A=Pre-produzione, B=Cast, C=Regista/Fotografo, D=Crew/Troupe, E=Studio, F=Location, G=Scenografia/Costumi, H=Attrezzatura tecnica, I=Trasporti, L=Catering, M=Film stock, N=Laboratorio/Off-line, O=Post-produzione, P=Assicurazione, Q=Viaggi/Alloggi, R=Buyouts, T=Service";
+
+async function importViaAI(contentBlocks, fname){
+  if(!getApiKey()){ alert("Per importare PDF/immagini/altri formati serve l'API key. Tap sull'ingranaggio in basso a sinistra."); return; }
+  if(!confirm("Analizzo \""+fname+"\" con l'AI ed estraggo le voci di costo mappandole sulle categorie A-T. Procedo?")) return;
+
   showTab("ai");
-  const prompt="Ho un preventivo di produzione in formato diverso. Ecco il contenuto CSV:\n\n"+csv+"\n\nEstrai le voci di costo e raggruppale nelle categorie Collateral (A Pre-prod, B Cast, C Regista/Foto, D Crew, E Studio, F Location, G Scenografia, H Attrezzatura, I Trasporti, L Catering, M Film stock, N Lab, O Post, P Assicurazione, Q Viaggi, R Buyouts). Rispondi SOLO con un riepilogo leggibile categoria per categoria con gli importi, senza JSON.";
-  await aiCall(prompt);
+  addAiMsg("assistant","📥 Sto analizzando \""+fname+"\" ed estraggo le voci di costo...");
+  const tid=showTyping();
+
+  const instruction = "Sei un sistema di estrazione dati da preventivi/budget di produzione video. "+
+    "Analizza il documento allegato ed estrai TUTTE le voci di costo. Mappa ogni voce su una di queste categorie: "+CAT_NAMES_IMPORT+". "+
+    "Estrai anche i dati di frontespizio se presenti (cliente, prodotto, regista, giorni ripresa). "+
+    "Rispondi ESCLUSIVAMENTE con un oggetto JSON valido, senza testo prima o dopo, senza markdown, in questo formato esatto:\n"+
+    '{"frontespizio":{"client":"","product":"","director":"","shoot":""},"voci":[{"cat":"D","desc":"Producer","importo":2000},{"cat":"H","desc":"Camera","importo":3000}]}'+
+    "\nUsa SOLO le lettere di categoria valide (A,B,C,D,E,F,G,H,I,L,M,N,O,P,Q,R,T). importo come numero senza simboli. Se un importo non è chiaro, usa 0.";
+
+  const messages = [{ role:"user", content: contentBlocks.concat([{type:"text", text: instruction}]) }];
+
+  try{
+    const resp = await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","x-api-key":getApiKey(),"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body:JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:4000, messages })
+    });
+    const data = await resp.json();
+    rmTyping(tid);
+    if(data.error){ addAiMsg("assistant","⚠️ API: "+(data.error.message||"errore")); return; }
+    let txt = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : "";
+    // pulizia eventuali fence markdown
+    txt = txt.replace(/```json/gi,"").replace(/```/g,"").trim();
+    let parsed;
+    try{ parsed = JSON.parse(txt); }
+    catch(e){
+      // tento di estrarre il primo blocco {...}
+      const m = txt.match(/\{[\s\S]*\}/);
+      if(m){ try{ parsed = JSON.parse(m[0]); }catch(e2){} }
+    }
+    if(!parsed || !parsed.voci){ addAiMsg("assistant","⚠️ Non sono riuscito a estrarre dati strutturati. Ecco cosa ho letto:\n\n"+txt.slice(0,500)); return; }
+    previewAndApply(parsed, fname);
+  }catch(e){ rmTyping(tid); addAiMsg("assistant","⚠️ Errore: "+e.message); }
+}
+
+let _pendingImport = null;
+function previewAndApply(parsed, fname){
+  _pendingImport = parsed;
+  const voci = parsed.voci || [];
+  let byCat = {};
+  voci.forEach(v=>{ const k=(v.cat||"").toUpperCase(); if(!byCat[k])byCat[k]=0; byCat[k]+=(parseFloat(v.importo)||0); });
+  let summary = "📋 Trovate "+voci.length+" voci in \""+fname+"\":\n\n";
+  Object.keys(byCat).sort().forEach(k=>{ const nm = (CELLMAP[k]?CELLMAP[k]:{}); summary += "• Cat "+k+": € "+Math.round(byCat[k]).toLocaleString("it-IT")+"\n"; });
+  if(parsed.frontespizio){ const fr=parsed.frontespizio; summary += "\nFrontespizio: "+(fr.client||"")+" "+(fr.product||"")+(fr.director?" · regia "+fr.director:"")+"\n"; }
+  summary += "\nVuoi caricarle nel budget? (verranno AGGIUNTE come nuove voci nelle rispettive categorie)";
+  addAiMsg("assistant", summary);
+
+  // bottoni conferma
+  const chat=document.getElementById("ai-chat");
+  const d=document.createElement("div"); d.className="ai-msg assistant"; d.id="import-confirm";
+  d.innerHTML='<div style="display:flex;gap:8px;"><button class="bar-btn primary" style="flex:1;" onclick="applyImport()">✓ Carica nel budget</button><button class="bar-btn" style="flex:1;" onclick="cancelImport()">Annulla</button></div>';
+  chat.appendChild(d); chat.scrollTop=chat.scrollHeight;
+}
+
+function cancelImport(){ _pendingImport=null; const e=document.getElementById("import-confirm"); if(e)e.remove(); addAiMsg("assistant","Import annullato."); }
+
+function applyImport(){
+  const e=document.getElementById("import-confirm"); if(e)e.remove();
+  if(!_pendingImport){ return; }
+  const voci = _pendingImport.voci || [];
+  let added=0;
+  voci.forEach(v=>{
+    const k=(v.cat||"").toUpperCase();
+    if(!S[k]) return;
+    const imp = parseFloat(v.importo)||0;
+    const desc = (v.desc||"voce importata").toString();
+    if(S[k].type==="crew"){
+      S[k].rows.push({d:desc, n:1, prep:0, days:1, str:0, str2:0, rate:imp, strcost:0});
+    } else {
+      S[k].rows.push({d:desc, q:1, p:imp});
+    }
+    added++;
+  });
+  // frontespizio
+  if(_pendingImport.frontespizio){
+    const fr=_pendingImport.frontespizio;
+    const set=(id,val)=>{ const el=document.getElementById(id); if(el && val && !el.value) el.value=val; };
+    set("f-client",fr.client); set("f-product",fr.product); set("f-director",fr.director); set("f-shoot",fr.shoot);
+    updateChip();
+  }
+  _pendingImport=null;
+  renderSections(); updateTotals(); updateCostReport();
+  addAiMsg("assistant","✅ Caricate "+added+" voci nel budget. Controlla le categorie e salva con ✓ Salva.");
+  showTab("budget");
 }
 
 (function(){
