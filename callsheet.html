@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Call Sheet">
+<title>Call Sheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0d12;--surface:#16161f;--surface2:#1e1e2a;--border:rgba(255,255,255,0.08);--text:#f0ede6;--muted:#7a7a8a;--accent:#1a3a6b;--accent2:#3a6bc8;--red:#e86d6d;--green:#6de8a0;}
+
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html{-webkit-text-size-adjust:100%;}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',-apple-system,sans-serif;min-height:100vh;min-height:100dvh;padding-bottom:env(safe-area-inset-bottom);}
+.header{background:var(--accent);color:#fff;padding:14px 18px;padding-top:calc(14px + env(safe-area-inset-top));display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;}
+.header-icon{width:38px;height:38px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.header-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;line-height:1.1;}
+.header-sub{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;opacity:0.7;margin-top:2px;}
+.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;position:sticky;top:0;z-index:90;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{flex-shrink:0;padding:12px 16px;font-size:11px;font-family:'IBM Plex Mono',monospace;letter-spacing:0.04em;text-transform:uppercase;cursor:pointer;border:none;background:transparent;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;}
+.tab.active{color:var(--accent2);border-bottom-color:var(--accent2);font-weight:500;}
+.panel{display:none;padding:14px;padding-bottom:100px;}
+.panel.active{display:block;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;}
+.card-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.card-title::after{content:'';flex:1;height:1px;background:var(--border);}
+.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;}
+.fl{font-size:10px;font-family:'IBM Plex Mono',monospace;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);}
+.fi{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:13px;color:var(--text);outline:none;width:100%;font-family:'IBM Plex Sans',sans-serif;}
+.fi:focus{border-color:var(--accent2);}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.btn{padding:11px;border-radius:10px;font-size:12px;font-family:'IBM Plex Mono',monospace;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);transition:all 0.15s;}
+.btn:active{background:var(--accent);color:#fff;}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn.full{width:100%;}
+.del-btn{width:24px;height:24px;background:none;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.del-btn:active{background:var(--red);color:#fff;}
+.add-btn{width:100%;padding:9px;background:var(--surface2);border:1px dashed var(--border);border-radius:8px;font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--muted);cursor:pointer;margin-top:6px;}
+.add-btn:active{background:var(--accent);color:#fff;}
+/* AI */
+.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.quick-btn{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:left;cursor:pointer;}
+.quick-btn:active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.qa-icon{font-size:18px;margin-bottom:5px;}
+.qa-title{font-size:12px;font-weight:500;}
+.qa-desc{font-size:11px;color:var(--muted);margin-top:2px;}
+.quick-btn:active .qa-desc{color:rgba(255,255,255,0.7);}
+.ai-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.ai-chat{padding:14px;min-height:180px;max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;}
+.ai-msg{max-width:90%;}.ai-msg.user{align-self:flex-end;}.ai-msg.assistant{align-self:flex-start;}
+.ai-bubble{padding:10px 13px;border-radius:12px;font-size:13px;line-height:1.55;}
+.ai-msg.user .ai-bubble{background:var(--accent);color:#fff;border-bottom-right-radius:3px;}
+.ai-msg.assistant .ai-bubble{background:var(--surface2);border:1px solid var(--border);border-bottom-left-radius:3px;}
+.ai-attach-row{display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px 0;}
+.ai-chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 8px 5px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;max-width:160px;}
+.ai-chip .fname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ai-chip .fx{cursor:pointer;color:var(--muted);font-size:14px;}
+.ai-msg-files{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;}
+.ai-msg-file-tag{font-size:10px;font-family:'IBM Plex Mono',monospace;background:rgba(128,128,128,0.2);border-radius:5px;padding:3px 7px;}
+.ai-input-row{display:flex;gap:8px;padding:10px;border-top:1px solid var(--border);background:var(--surface2);align-items:center;}
+.ai-attach-btn{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:16px;cursor:pointer;}
+.ai-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;font-family:'IBM Plex Sans',sans-serif;}
+.ai-input:focus{border-color:var(--accent2);}
+.ai-send{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:14px;cursor:pointer;}
+.ai-send.stop-mode{background:var(--red)!important;}
+.typing-dots{display:flex;gap:4px;align-items:center;padding:2px 0;}
+.td{width:6px;height:6px;background:var(--muted);border-radius:50%;animation:tb 1.2s infinite;}
+.td:nth-child(2){animation-delay:0.2s;}.td:nth-child(3){animation-delay:0.4s;}
+@keyframes tb{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-5px);opacity:1}}
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:10px 14px;padding-bottom:max(10px,env(safe-area-inset-bottom));display:flex;gap:8px;}
+::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.hidden{display:none!important;}
+
+.cs-time{font-family:'IBM Plex Mono',monospace;font-size:13px;}
+.row-line{display:grid;grid-template-columns:1fr 70px 70px 24px;gap:6px;align-items:center;padding:6px 2px;border-bottom:1px solid var(--surface2);}
+.row-line input{background:var(--bg);border:1px solid transparent;border-radius:6px;padding:6px 7px;font-size:12px;color:var(--text);outline:none;width:100%;font-family:'IBM Plex Sans',sans-serif;}
+.row-line input:focus{border-color:var(--accent2);background:var(--surface);}
+.row-line input.t{font-family:'IBM Plex Mono',monospace;text-align:center;}
+.row-head{display:grid;grid-template-columns:1fr 70px 70px 24px;gap:6px;padding:0 2px 6px;}
+.row-head span{font-size:9px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;color:var(--muted);text-align:center;}
+.row-head span:first-child{text-align:left;}
+.big-call{background:var(--accent);color:#fff;border-radius:12px;padding:16px;margin-bottom:14px;text-align:center;}
+.big-call-label{font-size:10px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;opacity:0.7;letter-spacing:0.1em;}
+.big-call-time{font-family:'Syne',sans-serif;font-size:34px;font-weight:800;margin-top:4px;}
+.map-link{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--accent2);text-decoration:none;font-family:'IBM Plex Mono',monospace;margin-top:4px;}
+</style></head><body>
+<div class="header"><div class="header-icon">📋</div><div><div class="header-title">Call Sheet</div><div class="header-sub">Foglio di lavorazione</div></div></div>
+<div class="tabs">
+  <button class="tab active" onclick="showTab('main')">Call Sheet</button>
+  <button class="tab" onclick="showTab('crew')">Crew & Cast</button>
+  <button class="tab" onclick="showTab('schedule')">Inquadrature</button>
+  <button class="tab" onclick="showTab('ai')">AI</button>
+</div>
+
+<div class="panel active" id="panel-main">
+  <div class="big-call"><div class="big-call-label">General Call</div><input id="gcall" value="07:00" oninput="saveAll()" style="background:transparent;border:none;color:#fff;font-family:Syne,sans-serif;font-size:34px;font-weight:800;text-align:center;width:100%;outline:none;"></div>
+  <div class="card">
+    <div class="card-title">Produzione</div>
+    <div class="grid2">
+      <div class="fg"><div class="fl">Progetto</div><input class="fi" id="m-proj" oninput="saveAll()"></div>
+      <div class="fg"><div class="fl">Cliente</div><input class="fi" id="m-client" oninput="saveAll()"></div>
+      <div class="fg"><div class="fl">Giorno n°</div><input class="fi" id="m-day" placeholder="1 di 2" oninput="saveAll()"></div>
+      <div class="fg"><div class="fl">Data</div><input class="fi" id="m-date" type="date" oninput="saveAll()"></div>
+      <div class="fg"><div class="fl">Regista</div><input class="fi" id="m-director" oninput="saveAll()"></div>
+      <div class="fg"><div class="fl">Produttore</div><input class="fi" id="m-producer" oninput="saveAll()"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Location</div>
+    <div class="fg"><div class="fl">Nome / Set</div><input class="fi" id="m-locname" oninput="saveAll()"></div>
+    <div class="fg"><div class="fl">Indirizzo</div><input class="fi" id="m-locaddr" oninput="updateMap();saveAll()" placeholder="Via, città"></div>
+    <a class="map-link" id="maplink" href="#" target="_blank">📍 apri in mappe</a>
+    <div class="grid2" style="margin-top:10px;">
+      <div class="fg"><div class="fl">Parcheggio</div><input class="fi" id="m-parking" oninput="saveAll()"></div>
+      <div class="fg"><div class="fl">Base camp</div><input class="fi" id="m-basecamp" oninput="saveAll()"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Meteo & Sole</div>
+    <div class="grid2">
+      <div class="fg"><div class="fl">Meteo</div><input class="fi" id="m-weather" placeholder="es. Sereno 24°" oninput="saveAll()"></div>
+      <div class="fg"><div class="fl">Alba / Tramonto</div><input class="fi" id="m-sun" placeholder="06:12 / 20:45" oninput="saveAll()"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Orari Giornata</div>
+    <div class="grid2">
+      <div class="fg"><div class="fl">Crew call</div><input class="fi cs-time" id="m-crewcall" value="07:00" oninput="saveAll()"></div>
+      <div class="fg"><div class="fl">Pronti a girare</div><input class="fi cs-time" id="m-ready" value="08:30" oninput="saveAll()"></div>
+      <div class="fg"><div class="fl">Pranzo</div><input class="fi cs-time" id="m-lunch" value="13:00" oninput="saveAll()"></div>
+      <div class="fg"><div class="fl">Wrap previsto</div><input class="fi cs-time" id="m-wrap" value="19:00" oninput="saveAll()"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Emergenze</div>
+    <div class="fg"><div class="fl">Ospedale più vicino</div><input class="fi" id="m-hospital" oninput="saveAll()"></div>
+    <div class="grid2">
+      <div class="fg"><div class="fl">Referente sicurezza</div><input class="fi" id="m-safety" oninput="saveAll()"></div>
+      <div class="fg"><div class="fl">Tel. emergenza</div><input class="fi" id="m-emerg" value="112" oninput="saveAll()"></div>
+    </div>
+  </div>
+</div>
+
+<div class="panel" id="panel-crew">
+  <div class="card">
+    <div class="card-title">Convocazioni Crew</div>
+    <div class="row-head"><span>Reparto / Nome</span><span>Call</span><span>On set</span><span></span></div>
+    <div id="crew-rows"></div>
+    <button class="add-btn" onclick="addCrew()">+ aggiungi crew</button>
+  </div>
+  <div class="card">
+    <div class="card-title">Convocazioni Cast</div>
+    <div class="row-head"><span>Talent / Ruolo</span><span>Call</span><span>Set</span><span></span></div>
+    <div id="cast-rows"></div>
+    <button class="add-btn" onclick="addCast()">+ aggiungi cast</button>
+  </div>
+</div>
+
+<div class="panel" id="panel-schedule">
+  <div class="card">
+    <div class="card-title">Ordine Inquadrature</div>
+    <div id="shot-rows"></div>
+    <button class="add-btn" onclick="addShot()">+ aggiungi scena/inquadratura</button>
+  </div>
+</div>
+
+<div class="panel" id="panel-ai">
+  <div class="quick-grid">
+    <div class="quick-btn" onclick="aiQuick('Genera un call sheet completo a partire dai dati inseriti. Suggerisci orari realistici per crew e cast.')"><div class="qa-icon">⚡</div><div class="qa-title">Genera</div><div class="qa-desc">Call sheet completo</div></div>
+    <div class="quick-btn" onclick="aiQuick('Calcola gli orari di convocazione a ritroso: se il wrap è alle 19, quando devono arrivare trucco, crew e cast?')"><div class="qa-icon">⏰</div><div class="qa-title">Orari</div><div class="qa-desc">Calcolo a ritroso</div></div>
+    <div class="quick-btn" onclick="aiQuick('Quali contatti, info di sicurezza e dettagli logistici mancano in questo call sheet?')"><div class="qa-icon">✅</div><div class="qa-title">Controllo</div><div class="qa-desc">Cosa manca</div></div>
+    <div class="quick-btn" onclick="aiQuick('Qual è l ospedale più vicino e cosa scrivere nella sezione emergenze per una ripresa a questo indirizzo?')"><div class="qa-icon">🏥</div><div class="qa-title">Sicurezza</div><div class="qa-desc">Emergenze</div></div>
+  </div>
+  <div class="ai-card">
+    <div class="ai-chat" id="ai-chat"></div>
+    <div class="ai-attach-row" id="ai-attach-row"></div>
+    <div class="ai-input-row">
+      <button class="ai-attach-btn" onclick="document.getElementById('ai-file').click()">📎</button>
+      <input class="ai-input" id="ai-input" placeholder="Chiedi sul call sheet..." onkeydown="if(event.key==='Enter')onAiSendBtn()">
+      <button class="ai-send" id="ai-send-btn" onclick="onAiSendBtn()">→</button>
+    </div>
+    <input type="file" id="ai-file" multiple accept="image/*,application/pdf,.txt,.csv" style="display:none" onchange="handleAiFiles(event)">
+  </div>
+</div>
+
+<div class="bottom-bar">
+  <button class="btn full" onclick="exportCS()">📤 Esporta</button>
+  <button class="btn primary full" onclick="saveAll()">✓ Salva</button>
+</div>
+
+<script>
+let crew=[], cast=[], shots=[];
+
+// ===== AI condiviso =====
+let aiHistory=[], isAiLoading=false, aiFiles=[], aiAbort=null;
+const AI_SYSTEM=`Sei un esperto assistente di produzione (line producer) per commercial pubblicitari italiani. Aiuti a compilare e ottimizzare il CALL SHEET (foglio di lavorazione giornaliero): orari di convocazione crew e cast, ordine delle inquadrature, location, meteo, contatti di emergenza, ospedale piu vicino. Conosci le convenzioni italiane. Sei pratico e diretto, parli italiano. Quando generi un call sheet, sii preciso su orari, reparti e logistica.`;
+function getApiKey(){try{return localStorage.getItem("anthropic_api_key")||"";}catch(e){return"";}}
+function setApiKey(k){try{localStorage.setItem("anthropic_api_key",k.trim());}catch(e){}}
+function handleAiFiles(e){Array.from(e.target.files||[]).forEach(readAiFile);e.target.value="";}
+function readAiFile(file){
+  const isImage=file.type.startsWith("image/"),isPdf=file.type==="application/pdf",isText=file.type.startsWith("text/")||/\.(txt|md|csv|json)$/i.test(file.name);
+  const r=new FileReader();
+  r.onload=ev=>{
+    if(isImage||isPdf){const b64=String(ev.target.result).split(",")[1]||"";aiFiles.push({name:file.name,type:file.type,dataB64:b64,isImage,isPdf,textContent:null});}
+    else if(isText){aiFiles.push({name:file.name,type:file.type,dataB64:null,isImage:false,isPdf:false,textContent:String(ev.target.result)});}
+    else{aiFiles.push({name:file.name,type:file.type,dataB64:null,isImage:false,isPdf:false,textContent:"[File non leggibile]"});}
+    renderAiChips();
+  };
+  if(isImage||isPdf)r.readAsDataURL(file);else r.readAsText(file);
+}
+function renderAiChips(){const el=document.getElementById("ai-attach-row");if(!el)return;el.innerHTML=aiFiles.map((f,i)=>{const ic=f.isImage?"🖼️":f.isPdf?"📄":"📃";return '<div class="ai-chip">'+ic+'<span class="fname">'+esc(f.name)+'</span><span class="fx" onclick="rmAiChip('+i+')">×</span></div>';}).join('');}
+function rmAiChip(i){aiFiles.splice(i,1);renderAiChips();}
+function buildAiContent(txt){
+  if(aiFiles.length===0)return txt;
+  const parts=[];
+  aiFiles.forEach(f=>{
+    if(f.isImage)parts.push({type:"image",source:{type:"base64",media_type:f.type,data:f.dataB64}});
+    else if(f.isPdf)parts.push({type:"document",source:{type:"base64",media_type:"application/pdf",data:f.dataB64}});
+    else if(f.textContent)parts.push({type:"text",text:'File "'+f.name+'":\n'+f.textContent});
+  });
+  parts.push({type:"text",text:txt});return parts;
+}
+function onAiSendBtn(){if(isAiLoading){if(aiAbort)aiAbort.abort();}else aiSend();}
+function setAiState(l){const b=document.getElementById("ai-send-btn");if(!b)return;if(l){b.classList.add("stop-mode");b.innerHTML="◼";}else{b.classList.remove("stop-mode");b.innerHTML="→";}b.disabled=false;}
+async function aiSend(){if(isAiLoading)return;const inp=document.getElementById("ai-input");const t=inp.value.trim();if(!t&&aiFiles.length===0)return;inp.value="";await aiCall(t||"Analizza i file allegati.");}
+async function aiQuick(t){await aiCall(t);}
+async function aiCall(userMsg){
+  if(isAiLoading)return;
+  const ctx=(typeof buildCtx==="function")?buildCtx():"";
+  const filesForMsg=aiFiles.slice();
+  const content=buildAiContent((ctx?ctx+"\n\n---\n":"")+"RICHIESTA: "+userMsg);
+  addAiMsg("user",userMsg,filesForMsg);
+  aiHistory.push({role:"user",content});
+  aiFiles=[];renderAiChips();
+  isAiLoading=true;setAiState(true);
+  const tid=showTyping();
+  if(!getApiKey()){rmTyping(tid);addAiMsg("assistant","🔑 Serve la tua API key Anthropic. Tap sull'ingranaggio in basso a sinistra.");isAiLoading=false;setAiState(false);return;}
+  aiAbort=new AbortController();
+  try{
+    const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",signal:aiAbort.signal,headers:{"Content-Type":"application/json","x-api-key":getApiKey(),"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:2000,system:AI_SYSTEM,messages:aiHistory})});
+    const data=await resp.json();
+    let reply;
+    if(data.content&&data.content[0]&&data.content[0].text)reply=data.content[0].text;
+    else if(data.error)reply="⚠️ API: "+(data.error.message||JSON.stringify(data.error));
+    else reply="⚠️ Risposta inattesa";
+    rmTyping(tid);aiHistory.push({role:"assistant",content:reply});addAiMsg("assistant",reply);
+  }catch(e){rmTyping(tid);if(e.name==="AbortError"){addAiMsg("assistant","⏹ Interrotto.");aiHistory.pop();}else addAiMsg("assistant","⚠️ Errore di connessione.");}
+  isAiLoading=false;aiAbort=null;setAiState(false);
+}
+function addAiMsg(role,text,files){
+  const chat=document.getElementById("ai-chat");const d=document.createElement("div");d.className="ai-msg "+role;
+  const fm=String(text).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>").replace(/\n/g,"<br>");
+  let fh="";if(files&&files.length){fh='<div class="ai-msg-files">'+files.map(f=>{const ic=f.isImage?"🖼️":f.isPdf?"📄":"📃";return '<span class="ai-msg-file-tag">'+ic+' '+esc(f.name)+'</span>';}).join('')+'</div>';}
+  d.innerHTML='<div class="ai-bubble">'+fh+fm+'</div>';chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
+  if(typeof showTab==="function")showTab("ai");
+}
+let _tc=0;
+function showTyping(){const id="typ-"+(++_tc);const chat=document.getElementById("ai-chat");const d=document.createElement("div");d.className="ai-msg assistant";d.id=id;d.innerHTML='<div class="ai-bubble"><div class="typing-dots"><div class="td"></div><div class="td"></div><div class="td"></div></div></div>';chat.appendChild(d);chat.scrollTop=chat.scrollHeight;return id;}
+function rmTyping(id){const e=document.getElementById(id);if(e)e.remove();}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+
+function showTab(t){
+  document.querySelectorAll(".tab").forEach((el,i)=>el.classList.toggle("active",["main","crew","schedule","ai"][i]===t));
+  document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+  document.getElementById("panel-"+t).classList.add("active");
+}
+function buildCtx(){
+  const g=id=>{const e=document.getElementById(id);return e?e.value:"";};
+  let s="CALL SHEET — Progetto: "+g("m-proj")+" | Cliente: "+g("m-client")+" | Giorno: "+g("m-day")+" | Data: "+g("m-date")+"\n";
+  s+="Regista: "+g("m-director")+" | Produttore: "+g("m-producer")+"\n";
+  s+="Location: "+g("m-locname")+" — "+g("m-locaddr")+"\nMeteo: "+g("m-weather")+" | Sole: "+g("m-sun")+"\n";
+  s+="Crew call: "+g("m-crewcall")+" | Pronti: "+g("m-ready")+" | Pranzo: "+g("m-lunch")+" | Wrap: "+g("m-wrap")+"\n";
+  s+="Ospedale: "+g("m-hospital")+"\n";
+  if(crew.length){s+="\nCrew:\n";crew.forEach(c=>s+="  "+c.name+" — call "+c.call+" set "+c.set+"\n");}
+  if(cast.length){s+="\nCast:\n";cast.forEach(c=>s+="  "+c.name+" — call "+c.call+" set "+c.set+"\n");}
+  if(shots.length){s+="\nInquadrature:\n";shots.forEach((sh,i)=>s+="  "+(i+1)+". "+sh.desc+" ("+sh.loc+", "+sh.time+")\n");}
+  return s;
+}
+function updateMap(){const a=document.getElementById("m-locaddr").value;const l=document.getElementById("maplink");if(a){l.href="https://maps.apple.com/?q="+encodeURIComponent(a);}else l.href="#";}
+// CREW
+function addCrew(){crew.push({name:"",call:"",set:""});renderCrew();}
+function renderCrew(){document.getElementById("crew-rows").innerHTML=crew.map((c,i)=>'<div class="row-line"><input value="'+esc(c.name)+'" placeholder="Reparto / nome" oninput="updCrew('+i+',\'name\',this.value)"><input class="t" value="'+esc(c.call)+'" placeholder="--:--" oninput="updCrew('+i+',\'call\',this.value)"><input class="t" value="'+esc(c.set)+'" placeholder="--:--" oninput="updCrew('+i+',\'set\',this.value)"><button class="del-btn" onclick="delCrew('+i+')">×</button></div>').join('');}
+function updCrew(i,f,v){crew[i][f]=v;saveAll();}
+function delCrew(i){crew.splice(i,1);renderCrew();saveAll();}
+// CAST
+function addCast(){cast.push({name:"",call:"",set:""});renderCast();}
+function renderCast(){document.getElementById("cast-rows").innerHTML=cast.map((c,i)=>'<div class="row-line"><input value="'+esc(c.name)+'" placeholder="Talent / ruolo" oninput="updCast('+i+',\'name\',this.value)"><input class="t" value="'+esc(c.call)+'" placeholder="--:--" oninput="updCast('+i+',\'call\',this.value)"><input class="t" value="'+esc(c.set)+'" placeholder="--:--" oninput="updCast('+i+',\'set\',this.value)"><button class="del-btn" onclick="delCast('+i+')">×</button></div>').join('');}
+function updCast(i,f,v){cast[i][f]=v;saveAll();}
+function delCast(i){cast.splice(i,1);renderCast();saveAll();}
+// SHOTS
+function addShot(){shots.push({desc:"",loc:"",time:""});renderShots();}
+function renderShots(){document.getElementById("shot-rows").innerHTML=shots.map((s,i)=>'<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;"><div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;"><span style="font-family:Syne,sans-serif;font-weight:700;color:var(--accent2);">'+(i+1)+'</span><input style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;color:var(--text);outline:none;" value="'+esc(s.desc)+'" placeholder="Descrizione scena/inquadratura" oninput="updShot('+i+',\'desc\',this.value)"><button class="del-btn" onclick="delShot('+i+')">×</button></div><div style="display:grid;grid-template-columns:1fr 80px;gap:6px;"><input style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;color:var(--text);outline:none;" value="'+esc(s.loc)+'" placeholder="Location/set" oninput="updShot('+i+',\'loc\',this.value)"><input style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;color:var(--text);outline:none;font-family:IBM Plex Mono,monospace;text-align:center;" value="'+esc(s.time)+'" placeholder="ora" oninput="updShot('+i+',\'time\',this.value)"></div></div>').join('');}
+function updShot(i,f,v){shots[i][f]=v;saveAll();}
+function delShot(i){shots.splice(i,1);renderShots();saveAll();}
+
+function saveAll(){
+  try{
+    const proj={};["gcall","m-proj","m-client","m-day","m-date","m-director","m-producer","m-locname","m-locaddr","m-parking","m-basecamp","m-weather","m-sun","m-crewcall","m-ready","m-lunch","m-wrap","m-hospital","m-safety","m-emerg"].forEach(id=>{const e=document.getElementById(id);if(e)proj[id]=e.value;});
+    localStorage.setItem("callsheet_data",JSON.stringify({proj,crew,cast,shots}));
+  }catch(e){}
+}
+function load(){
+  try{const d=JSON.parse(localStorage.getItem("callsheet_data")||"{}");
+    if(d.proj)Object.keys(d.proj).forEach(id=>{const e=document.getElementById(id);if(e)e.value=d.proj[id];});
+    crew=d.crew||[];cast=d.cast||[];shots=d.shots||[];
+  }catch(e){}
+  if(crew.length===0)crew=[{name:"Regista",call:"07:30",set:"08:30"},{name:"DOP",call:"07:00",set:"08:00"},{name:"Operatore",call:"07:00",set:"08:00"},{name:"Fonico",call:"07:30",set:"08:30"},{name:"Trucco/Parrucco",call:"06:30",set:""}];
+  if(cast.length===0)cast=[{name:"Protagonista",call:"07:00",set:"09:00"}];
+  renderCrew();renderCast();renderShots();updateMap();
+}
+function exportCS(){
+  const g=id=>{const e=document.getElementById(id);return e?e.value:"";};
+  let t="═══════════════════════════════\nCALL SHEET — "+g("m-proj")+"\n"+g("m-client")+" · Giorno "+g("m-day")+" · "+g("m-date")+"\n═══════════════════════════════\n\n";
+  t+="GENERAL CALL: "+g("gcall")+"\n\nLOCATION: "+g("m-locname")+"\n"+g("m-locaddr")+"\nParcheggio: "+g("m-parking")+" | Base camp: "+g("m-basecamp")+"\n\n";
+  t+="METEO: "+g("m-weather")+" | Sole: "+g("m-sun")+"\n\nORARI: crew "+g("m-crewcall")+" · pronti "+g("m-ready")+" · pranzo "+g("m-lunch")+" · wrap "+g("m-wrap")+"\n\n";
+  t+="── CREW ──\n";crew.forEach(c=>t+="  "+c.name.padEnd(24)+" call "+c.call+"  set "+c.set+"\n");
+  t+="\n── CAST ──\n";cast.forEach(c=>t+="  "+c.name.padEnd(24)+" call "+c.call+"  set "+c.set+"\n");
+  t+="\n── INQUADRATURE ──\n";shots.forEach((s,i)=>t+="  "+(i+1)+". "+s.desc+" ("+s.loc+", "+s.time+")\n");
+  t+="\n── EMERGENZE ──\nOspedale: "+g("m-hospital")+"\nSicurezza: "+g("m-safety")+" | Tel: "+g("m-emerg")+"\n";
+  const blob=new Blob([t],{type:"text/plain;charset=utf-8"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="callsheet.txt";a.click();URL.revokeObjectURL(url);
+}
+
+// ===== BYOK =====
+(function(){
+  var btn=document.createElement("div");btn.innerHTML="\u2699\uFE0F";
+  btn.style.cssText="position:fixed;left:12px;bottom:calc(70px + env(safe-area-inset-bottom));width:40px;height:40px;border-radius:50%;background:var(--accent);color:#fff;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:17px;z-index:9000;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,0.3);";
+  btn.onclick=openKey;document.body.appendChild(btn);
+  var m=document.createElement("div");m.id="keymodal";m.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px;";
+  m.innerHTML='<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;max-width:420px;width:100%;"><div style="font-size:17px;font-weight:700;margin-bottom:6px;font-family:Syne,sans-serif;color:var(--text);">🔑 API Key</div><div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px;">Incolla la chiave Anthropic. Resta solo su questo dispositivo.</div><input id="keyin" type="password" placeholder="sk-ant-..." autocomplete="off" autocapitalize="off" spellcheck="false" style="width:100%;border:1px solid var(--border);border-radius:10px;padding:12px;font-size:14px;font-family:monospace;outline:none;margin-bottom:14px;box-sizing:border-box;background:var(--bg);color:var(--text);"><div style="display:flex;gap:10px;"><button onclick="closeKey()" style="flex:1;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:14px;cursor:pointer;">Annulla</button><button onclick="saveKey()" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">Salva</button></div><div id="keystatus" style="font-size:11px;color:var(--green);margin-top:10px;text-align:center;min-height:14px;"></div></div>';
+  document.body.appendChild(m);
+})();
+function openKey(){document.getElementById("keyin").value=getApiKey();document.getElementById("keystatus").textContent="";document.getElementById("keymodal").style.display="flex";}
+function closeKey(){document.getElementById("keymodal").style.display="none";}
+function saveKey(){const v=document.getElementById("keyin").value.trim();setApiKey(v);const s=document.getElementById("keystatus");if(v){s.style.color="var(--green)";s.textContent="✓ Salvata";}else{s.style.color="var(--red)";s.textContent="Rimossa";}setTimeout(closeKey,900);}
+
+load();
+</script>
+</body></html>

@@ -13,7 +13,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html{-webkit-text-size-adjust:100%;}
-body{background:#0d0d12;font-family:"IBM Plex Mono",monospace;min-height:100vh;min-height:100dvh;padding-top:env(safe-area-inset-top);padding-bottom:calc(env(safe-area-inset-bottom) + 24px);-webkit-overflow-scrolling:touch;}
+body{background:#0d0d12;font-family:"IBM Plex Mono",monospace;min-height:100vh;min-height:100dvh;padding-top:env(safe-area-inset-top);padding-bottom:calc(env(safe-area-inset-bottom) + 24px);}
 #splash{position:fixed;inset:0;background:#0d0d12;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;opacity:1;transition:opacity 0.5s ease;}
 #splash.hide{opacity:0;pointer-events:none;}
 .splash-p{font-family:"Syne",sans-serif;font-size:44px;font-weight:800;color:#f0ede6;letter-spacing:-0.04em;}
@@ -44,31 +44,23 @@ a.agent-card:active{transform:scale(0.97);opacity:0.85;}
 .card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.06);}
 .open-lbl{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;font-weight:500;}
 .coming{border:1px dashed rgba(255,255,255,0.07);border-radius:20px;padding:22px;text-align:center;}
+.footer{text-align:center;margin-top:30px;font-size:10px;color:#3a3a4a;letter-spacing:0.08em;padding:0 24px;}
+.version-chip{display:inline-block;padding:4px 12px;border:1px solid rgba(255,255,255,0.07);border-radius:20px;margin-bottom:10px;font-size:9px;color:#4a4a5a;letter-spacing:0.1em;}
 </style>
 </head>
 <body>
-<div id="splash">
-  <div class="splash-p">PRO<span>DU</span>CER</div>
-  <div class="splash-sub">Agents · Napoli</div>
-  <div class="splash-bar"></div>
-</div>
-<div class="header">
-  <div class="header-title">PRODUCER <span>AGENTS</span></div>
-  <div class="header-sub">Commercial Production · Napoli</div>
-</div>
+<div id="splash"><div class="splash-p">PRO<span>DU</span>CER</div><div class="splash-sub">Agents · Napoli</div><div class="splash-bar"></div></div>
+<div class="header"><div class="header-title">PRODUCER <span>AGENTS</span></div><div class="header-sub">Commercial Production · Napoli</div></div>
 <div class="content">
-  <div id="install-banner">
-    <div class="banner-icon">📲</div>
-    <div class="banner-text"><strong>Aggiungi alla Home</strong> — tap su Condividi (□↑) poi <strong>"Aggiungi a schermata Home"</strong>.</div>
-    <div class="banner-close" onclick="closeBanner()">×</div>
-  </div>
+  <div id="install-banner"><div class="banner-icon">📲</div><div class="banner-text"><strong>Aggiungi alla Home</strong> — tap su Condividi (□↑) poi <strong>"Aggiungi a schermata Home"</strong>.</div><div class="banner-close" onclick="closeBanner()">×</div></div>
+
   <a class="agent-card" href="budget.html">
     <div class="card-stripe" style="background:linear-gradient(90deg,#e8b84b,#c8380a);"></div>
     <div class="card-body">
       <div class="card-icon">📊</div>
       <div class="card-title">Budget Agent</div>
-      <div class="card-desc">Budget per reparti, cost report con varianze in tempo reale, AI advisor che analizza i tuoi numeri.</div>
-      <div class="pills"><span class="pill">Budget</span><span class="pill">Cost Report</span><span class="pill">Varianze</span><span class="pill">AI Advisor</span></div>
+      <div class="card-desc">Preventivo e consuntivo su template Collateral, calcolo crew/NIC/straordinari, import/export Excel, AI advisor.</div>
+      <div class="pills"><span class="pill">Preventivo</span><span class="pill">Consuntivo</span><span class="pill">Excel I/O</span><span class="pill">AI</span></div>
       <div class="card-footer"><span class="open-lbl" style="color:#e8b84b;">Apri agente</span><span style="color:#e8b84b;font-size:20px;">→</span></div>
     </div>
   </a>
@@ -77,22 +69,48 @@ a.agent-card:active{transform:scale(0.97);opacity:0.85;}
     <div class="card-body">
       <div class="card-icon">🏛️</div>
       <div class="card-title">Agente Permessi</div>
-      <div class="card-desc">Permessi di ripresa con il Comune di Napoli. Genera lettere, checklist documenti, contatti Ufficio Cinema.</div>
-      <div class="pills"><span class="pill">Comune Napoli</span><span class="pill">Lettere</span><span class="pill">Checklist</span><span class="pill">Soprintendenza</span></div>
+      <div class="card-desc">Permessi di ripresa Comune di Napoli. Lettere, checklist, contatti Ufficio Cinema e Soprintendenza.</div>
+      <div class="pills"><span class="pill">Napoli</span><span class="pill">Lettere</span><span class="pill">Checklist</span></div>
       <div class="card-footer"><span class="open-lbl" style="color:#6d9de8;">Apri agente</span><span style="color:#6d9de8;font-size:20px;">→</span></div>
     </div>
   </a>
-  <div class="coming">
-    <div style="font-size:24px;margin-bottom:10px;opacity:0.3;">🗓️ &nbsp; 🎬 &nbsp; 👥</div>
-    <div style="font-family:Syne,sans-serif;font-size:14px;color:#3a3a4a;margin-bottom:5px;font-weight:700;">Prossimamente</div>
-    <div style="font-size:11px;color:#2a2a3a;line-height:1.7;">Scheduling · Call Sheet · Crew & Deal Memo</div>
-  </div>
+  <a class="agent-card" href="callsheet.html">
+    <div class="card-stripe" style="background:linear-gradient(90deg,#3a6bc8,#1a3a6b);"></div>
+    <div class="card-body">
+      <div class="card-icon">📋</div>
+      <div class="card-title">Call Sheet</div>
+      <div class="card-desc">Foglio di lavorazione giornaliero: orari crew/cast, location, meteo, inquadrature, emergenze.</div>
+      <div class="pills"><span class="pill">Orari</span><span class="pill">Location</span><span class="pill">Crew/Cast</span></div>
+      <div class="card-footer"><span class="open-lbl" style="color:#3a6bc8;">Apri agente</span><span style="color:#3a6bc8;font-size:20px;">→</span></div>
+    </div>
+  </a>
+  <a class="agent-card" href="scheduling.html">
+    <div class="card-stripe" style="background:linear-gradient(90deg,#c83a8a,#6b1a4a);"></div>
+    <div class="card-body">
+      <div class="card-icon">🗓️</div>
+      <div class="card-title">Scheduling</div>
+      <div class="card-desc">Piano di lavorazione / strip board: scene per giornata, raggruppamento location e cast.</div>
+      <div class="pills"><span class="pill">Strip board</span><span class="pill">Giornate</span><span class="pill">Ottimizza</span></div>
+      <div class="card-footer"><span class="open-lbl" style="color:#c83a8a;">Apri agente</span><span style="color:#c83a8a;font-size:20px;">→</span></div>
+    </div>
+  </a>
+  <a class="agent-card" href="crew.html">
+    <div class="card-stripe" style="background:linear-gradient(90deg,#2a9b5a,#1a5a3a);"></div>
+    <div class="card-body">
+      <div class="card-icon">👥</div>
+      <div class="card-title">Crew & Deal Memo</div>
+      <div class="card-desc">Troupe con ruoli e tariffe Collateral, costi, generazione deal memo e contratti.</div>
+      <div class="pills"><span class="pill">Troupe</span><span class="pill">Tariffe</span><span class="pill">Deal Memo</span></div>
+      <div class="card-footer"><span class="open-lbl" style="color:#2a9b5a;">Apri agente</span><span style="color:#2a9b5a;font-size:20px;">→</span></div>
+    </div>
+  </a>
+  <div class="coming"><div style="font-size:24px;margin-bottom:10px;opacity:0.3;">🎭 &nbsp; 🚐 &nbsp; 💰</div><div style="font-family:Syne,sans-serif;font-size:14px;color:#3a3a4a;margin-bottom:5px;font-weight:700;">Prossimamente</div><div style="font-size:11px;color:#2a2a3a;line-height:1.7;">Cast & Liberatorie · Logistica & Trasporti<br>Petty Cash · PPM · Delivery</div></div>
 </div>
+<div class="footer"><div class="version-chip">v2.0 · 5 AGENTI ATTIVI</div><div>Producer Agents · Napoli · 2026</div></div>
 <script>
-window.addEventListener("load", function(){ setTimeout(function(){ document.getElementById("splash").classList.add("hide"); }, 1300); });
-if(window.navigator.standalone === true){ document.getElementById("install-banner").classList.add("hidden"); }
-function closeBanner(){ document.getElementById("install-banner").classList.add("hidden"); try{ localStorage.setItem("banner_closed","1"); }catch(e){} }
-try{ if(localStorage.getItem("banner_closed")==="1"){ document.getElementById("install-banner").classList.add("hidden"); } }catch(e){}
+window.addEventListener("load",function(){setTimeout(function(){document.getElementById("splash").classList.add("hide");},1300);});
+if(window.navigator.standalone===true){document.getElementById("install-banner").classList.add("hidden");}
+function closeBanner(){document.getElementById("install-banner").classList.add("hidden");try{localStorage.setItem("banner_closed","1");}catch(e){}}
+try{if(localStorage.getItem("banner_closed")==="1"){document.getElementById("install-banner").classList.add("hidden");}}catch(e){}
 </script>
-</body>
-</html>
+</body></html>

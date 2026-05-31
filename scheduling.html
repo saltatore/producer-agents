@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Scheduling">
+<title>Scheduling</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0d12;--surface:#16161f;--surface2:#1e1e2a;--border:rgba(255,255,255,0.08);--text:#f0ede6;--muted:#7a7a8a;--accent:#6b1a4a;--accent2:#c83a8a;--red:#e86d6d;--green:#6de8a0;}
+
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html{-webkit-text-size-adjust:100%;}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',-apple-system,sans-serif;min-height:100vh;min-height:100dvh;padding-bottom:env(safe-area-inset-bottom);}
+.header{background:var(--accent);color:#fff;padding:14px 18px;padding-top:calc(14px + env(safe-area-inset-top));display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;}
+.header-icon{width:38px;height:38px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.header-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;line-height:1.1;}
+.header-sub{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;opacity:0.7;margin-top:2px;}
+.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;position:sticky;top:0;z-index:90;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{flex-shrink:0;padding:12px 16px;font-size:11px;font-family:'IBM Plex Mono',monospace;letter-spacing:0.04em;text-transform:uppercase;cursor:pointer;border:none;background:transparent;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;}
+.tab.active{color:var(--accent2);border-bottom-color:var(--accent2);font-weight:500;}
+.panel{display:none;padding:14px;padding-bottom:100px;}
+.panel.active{display:block;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;}
+.card-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.card-title::after{content:'';flex:1;height:1px;background:var(--border);}
+.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;}
+.fl{font-size:10px;font-family:'IBM Plex Mono',monospace;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);}
+.fi{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:13px;color:var(--text);outline:none;width:100%;font-family:'IBM Plex Sans',sans-serif;}
+.fi:focus{border-color:var(--accent2);}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.btn{padding:11px;border-radius:10px;font-size:12px;font-family:'IBM Plex Mono',monospace;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);transition:all 0.15s;}
+.btn:active{background:var(--accent);color:#fff;}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn.full{width:100%;}
+.del-btn{width:24px;height:24px;background:none;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.del-btn:active{background:var(--red);color:#fff;}
+.add-btn{width:100%;padding:9px;background:var(--surface2);border:1px dashed var(--border);border-radius:8px;font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--muted);cursor:pointer;margin-top:6px;}
+.add-btn:active{background:var(--accent);color:#fff;}
+/* AI */
+.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.quick-btn{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:left;cursor:pointer;}
+.quick-btn:active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.qa-icon{font-size:18px;margin-bottom:5px;}
+.qa-title{font-size:12px;font-weight:500;}
+.qa-desc{font-size:11px;color:var(--muted);margin-top:2px;}
+.quick-btn:active .qa-desc{color:rgba(255,255,255,0.7);}
+.ai-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.ai-chat{padding:14px;min-height:180px;max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;}
+.ai-msg{max-width:90%;}.ai-msg.user{align-self:flex-end;}.ai-msg.assistant{align-self:flex-start;}
+.ai-bubble{padding:10px 13px;border-radius:12px;font-size:13px;line-height:1.55;}
+.ai-msg.user .ai-bubble{background:var(--accent);color:#fff;border-bottom-right-radius:3px;}
+.ai-msg.assistant .ai-bubble{background:var(--surface2);border:1px solid var(--border);border-bottom-left-radius:3px;}
+.ai-attach-row{display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px 0;}
+.ai-chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 8px 5px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;max-width:160px;}
+.ai-chip .fname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ai-chip .fx{cursor:pointer;color:var(--muted);font-size:14px;}
+.ai-msg-files{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;}
+.ai-msg-file-tag{font-size:10px;font-family:'IBM Plex Mono',monospace;background:rgba(128,128,128,0.2);border-radius:5px;padding:3px 7px;}
+.ai-input-row{display:flex;gap:8px;padding:10px;border-top:1px solid var(--border);background:var(--surface2);align-items:center;}
+.ai-attach-btn{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:16px;cursor:pointer;}
+.ai-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;font-family:'IBM Plex Sans',sans-serif;}
+.ai-input:focus{border-color:var(--accent2);}
+.ai-send{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:14px;cursor:pointer;}
+.ai-send.stop-mode{background:var(--red)!important;}
+.typing-dots{display:flex;gap:4px;align-items:center;padding:2px 0;}
+.td{width:6px;height:6px;background:var(--muted);border-radius:50%;animation:tb 1.2s infinite;}
+.td:nth-child(2){animation-delay:0.2s;}.td:nth-child(3){animation-delay:0.4s;}
+@keyframes tb{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-5px);opacity:1}}
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:10px 14px;padding-bottom:max(10px,env(safe-area-inset-bottom));display:flex;gap:8px;}
+::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.hidden{display:none!important;}
+
+.strip{background:var(--bg);border-left:4px solid var(--accent2);border-radius:8px;padding:10px;margin-bottom:8px;}
+.strip.intext-INT{border-left-color:#3a6bc8;}
+.strip.intext-EXT{border-left-color:#6de8a0;}
+.strip-top{display:flex;gap:8px;align-items:center;margin-bottom:6px;}
+.strip-num{font-family:Syne,sans-serif;font-weight:700;color:var(--accent2);font-size:14px;min-width:22px;}
+.strip-desc{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;color:var(--text);outline:none;}
+.strip-meta{display:grid;grid-template-columns:repeat(4,1fr) 24px;gap:5px;}
+.strip-meta select,.strip-meta input{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 4px;font-size:11px;color:var(--text);outline:none;width:100%;font-family:'IBM Plex Mono',monospace;}
+.day-head{display:flex;align-items:center;justify-content:space-between;background:var(--accent);color:#fff;border-radius:10px;padding:10px 13px;margin:14px 0 8px;}
+.day-title{font-family:Syne,sans-serif;font-weight:700;font-size:13px;}
+.day-count{font-size:10px;font-family:'IBM Plex Mono',monospace;opacity:0.8;}
+.move-btns{display:flex;flex-direction:column;gap:2px;}
+.move-btns button{width:20px;height:16px;background:var(--surface);border:1px solid var(--border);border-radius:4px;font-size:9px;cursor:pointer;color:var(--muted);padding:0;display:flex;align-items:center;justify-content:center;}
+</style></head><body>
+<div class="header"><div class="header-icon">🗓️</div><div><div class="header-title">Scheduling</div><div class="header-sub">Piano di lavorazione</div></div></div>
+<div class="tabs">
+  <button class="tab active" onclick="showTab('board')">Strip Board</button>
+  <button class="tab" onclick="showTab('days')">Per Giornata</button>
+  <button class="tab" onclick="showTab('ai')">AI</button>
+</div>
+
+<div class="panel active" id="panel-board">
+  <div class="card">
+    <div class="card-title">Scene & Inquadrature</div>
+    <div id="strips"></div>
+    <button class="add-btn" onclick="addStrip()">+ aggiungi scena</button>
+  </div>
+</div>
+
+<div class="panel" id="panel-days">
+  <div id="days-view"></div>
+</div>
+
+<div class="panel" id="panel-ai">
+  <div class="quick-grid">
+    <div class="quick-btn" onclick="aiQuick('Ottimizza il piano di lavorazione: raggruppa le scene per location e cast per minimizzare spostamenti e costi. Proponi una suddivisione in giornate.')"><div class="qa-icon">⚡</div><div class="qa-title">Ottimizza</div><div class="qa-desc">Per location/cast</div></div>
+    <div class="quick-btn" onclick="aiQuick('Quante giornate di ripresa servono realisticamente per queste scene? Motiva.')"><div class="qa-icon">📆</div><div class="qa-title">Giornate</div><div class="qa-desc">Stima durata</div></div>
+    <div class="quick-btn" onclick="aiQuick('Quali scene conviene girare per prime per ragioni di luce, cast o logistica?')"><div class="qa-icon">🎬</div><div class="qa-title">Ordine</div><div class="qa-desc">Sequenza ottimale</div></div>
+    <div class="quick-btn" onclick="aiQuick('Genera un piano di lavorazione completo a partire dalle scene inserite.')"><div class="qa-icon">📋</div><div class="qa-title">Genera</div><div class="qa-desc">Piano completo</div></div>
+  </div>
+  <div class="ai-card">
+    <div class="ai-chat" id="ai-chat"></div>
+    <div class="ai-attach-row" id="ai-attach-row"></div>
+    <div class="ai-input-row">
+      <button class="ai-attach-btn" onclick="document.getElementById('ai-file').click()">📎</button>
+      <input class="ai-input" id="ai-input" placeholder="Chiedi sul piano..." onkeydown="if(event.key==='Enter')onAiSendBtn()">
+      <button class="ai-send" id="ai-send-btn" onclick="onAiSendBtn()">→</button>
+    </div>
+    <input type="file" id="ai-file" multiple accept="image/*,application/pdf,.txt,.csv" style="display:none" onchange="handleAiFiles(event)">
+  </div>
+</div>
+
+<div class="bottom-bar">
+  <button class="btn full" onclick="exportSched()">📤 Esporta</button>
+  <button class="btn primary full" onclick="saveAll()">✓ Salva</button>
+</div>
+
+<script>
+let strips=[];
+
+// ===== AI condiviso =====
+let aiHistory=[], isAiLoading=false, aiFiles=[], aiAbort=null;
+const AI_SYSTEM=`Sei un esperto di pianificazione produzione (1st AD / line producer) per commercial italiani. Aiuti a costruire il PIANO DI LAVORAZIONE (strip board): scene/inquadrature organizzate per giornata, raggruppate per location e cast per minimizzare spostamenti e costi. Conosci INT/EXT, giorno/notte, e l ottimizzazione logistica. Pratico e diretto, parli italiano.`;
+function getApiKey(){try{return localStorage.getItem("anthropic_api_key")||"";}catch(e){return"";}}
+function setApiKey(k){try{localStorage.setItem("anthropic_api_key",k.trim());}catch(e){}}
+function handleAiFiles(e){Array.from(e.target.files||[]).forEach(readAiFile);e.target.value="";}
+function readAiFile(file){
+  const isImage=file.type.startsWith("image/"),isPdf=file.type==="application/pdf",isText=file.type.startsWith("text/")||/\.(txt|md|csv|json)$/i.test(file.name);
+  const r=new FileReader();
+  r.onload=ev=>{
+    if(isImage||isPdf){const b64=String(ev.target.result).split(",")[1]||"";aiFiles.push({name:file.name,type:file.type,dataB64:b64,isImage,isPdf,textContent:null});}
+    else if(isText){aiFiles.push({name:file.name,type:file.type,dataB64:null,isImage:false,isPdf:false,textContent:String(ev.target.result)});}
+    else{aiFiles.push({name:file.name,type:file.type,dataB64:null,isImage:false,isPdf:false,textContent:"[File non leggibile]"});}
+    renderAiChips();
+  };
+  if(isImage||isPdf)r.readAsDataURL(file);else r.readAsText(file);
+}
+function renderAiChips(){const el=document.getElementById("ai-attach-row");if(!el)return;el.innerHTML=aiFiles.map((f,i)=>{const ic=f.isImage?"🖼️":f.isPdf?"📄":"📃";return '<div class="ai-chip">'+ic+'<span class="fname">'+esc(f.name)+'</span><span class="fx" onclick="rmAiChip('+i+')">×</span></div>';}).join('');}
+function rmAiChip(i){aiFiles.splice(i,1);renderAiChips();}
+function buildAiContent(txt){
+  if(aiFiles.length===0)return txt;
+  const parts=[];
+  aiFiles.forEach(f=>{
+    if(f.isImage)parts.push({type:"image",source:{type:"base64",media_type:f.type,data:f.dataB64}});
+    else if(f.isPdf)parts.push({type:"document",source:{type:"base64",media_type:"application/pdf",data:f.dataB64}});
+    else if(f.textContent)parts.push({type:"text",text:'File "'+f.name+'":\n'+f.textContent});
+  });
+  parts.push({type:"text",text:txt});return parts;
+}
+function onAiSendBtn(){if(isAiLoading){if(aiAbort)aiAbort.abort();}else aiSend();}
+function setAiState(l){const b=document.getElementById("ai-send-btn");if(!b)return;if(l){b.classList.add("stop-mode");b.innerHTML="◼";}else{b.classList.remove("stop-mode");b.innerHTML="→";}b.disabled=false;}
+async function aiSend(){if(isAiLoading)return;const inp=document.getElementById("ai-input");const t=inp.value.trim();if(!t&&aiFiles.length===0)return;inp.value="";await aiCall(t||"Analizza i file allegati.");}
+async function aiQuick(t){await aiCall(t);}
+async function aiCall(userMsg){
+  if(isAiLoading)return;
+  const ctx=(typeof buildCtx==="function")?buildCtx():"";
+  const filesForMsg=aiFiles.slice();
+  const content=buildAiContent((ctx?ctx+"\n\n---\n":"")+"RICHIESTA: "+userMsg);
+  addAiMsg("user",userMsg,filesForMsg);
+  aiHistory.push({role:"user",content});
+  aiFiles=[];renderAiChips();
+  isAiLoading=true;setAiState(true);
+  const tid=showTyping();
+  if(!getApiKey()){rmTyping(tid);addAiMsg("assistant","🔑 Serve la tua API key Anthropic. Tap sull'ingranaggio in basso a sinistra.");isAiLoading=false;setAiState(false);return;}
+  aiAbort=new AbortController();
+  try{
+    const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",signal:aiAbort.signal,headers:{"Content-Type":"application/json","x-api-key":getApiKey(),"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:2000,system:AI_SYSTEM,messages:aiHistory})});
+    const data=await resp.json();
+    let reply;
+    if(data.content&&data.content[0]&&data.content[0].text)reply=data.content[0].text;
+    else if(data.error)reply="⚠️ API: "+(data.error.message||JSON.stringify(data.error));
+    else reply="⚠️ Risposta inattesa";
+    rmTyping(tid);aiHistory.push({role:"assistant",content:reply});addAiMsg("assistant",reply);
+  }catch(e){rmTyping(tid);if(e.name==="AbortError"){addAiMsg("assistant","⏹ Interrotto.");aiHistory.pop();}else addAiMsg("assistant","⚠️ Errore di connessione.");}
+  isAiLoading=false;aiAbort=null;setAiState(false);
+}
+function addAiMsg(role,text,files){
+  const chat=document.getElementById("ai-chat");const d=document.createElement("div");d.className="ai-msg "+role;
+  const fm=String(text).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>").replace(/\n/g,"<br>");
+  let fh="";if(files&&files.length){fh='<div class="ai-msg-files">'+files.map(f=>{const ic=f.isImage?"🖼️":f.isPdf?"📄":"📃";return '<span class="ai-msg-file-tag">'+ic+' '+esc(f.name)+'</span>';}).join('')+'</div>';}
+  d.innerHTML='<div class="ai-bubble">'+fh+fm+'</div>';chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
+  if(typeof showTab==="function")showTab("ai");
+}
+let _tc=0;
+function showTyping(){const id="typ-"+(++_tc);const chat=document.getElementById("ai-chat");const d=document.createElement("div");d.className="ai-msg assistant";d.id=id;d.innerHTML='<div class="ai-bubble"><div class="typing-dots"><div class="td"></div><div class="td"></div><div class="td"></div></div></div>';chat.appendChild(d);chat.scrollTop=chat.scrollHeight;return id;}
+function rmTyping(id){const e=document.getElementById(id);if(e)e.remove();}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+
+function showTab(t){
+  document.querySelectorAll(".tab").forEach((el,i)=>el.classList.toggle("active",["board","days","ai"][i]===t));
+  document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+  document.getElementById("panel-"+t).classList.add("active");
+  if(t==="days")renderDays();
+}
+function buildCtx(){
+  if(strips.length===0)return "Nessuna scena inserita.";
+  let s="PIANO DI LAVORAZIONE — "+strips.length+" scene:\n";
+  strips.forEach((x,i)=>{s+=(i+1)+". "+x.desc+" ["+x.intext+"/"+x.dn+"] loc:"+x.loc+" cast:"+x.cast+" durata:"+x.dur+" giorno:"+(x.day||"-")+"\n";});
+  return s;
+}
+function addStrip(){strips.push({desc:"",intext:"INT",dn:"DAY",loc:"",cast:"",dur:"",day:""});renderStrips();}
+function renderStrips(){
+  document.getElementById("strips").innerHTML=strips.map((x,i)=>
+    '<div class="strip intext-'+x.intext+'">'+
+    '<div class="strip-top"><span class="strip-num">'+(i+1)+'</span><input class="strip-desc" value="'+esc(x.desc)+'" placeholder="Descrizione scena" oninput="upd('+i+',\'desc\',this.value)">'+
+    '<div class="move-btns"><button onclick="move('+i+',-1)">▲</button><button onclick="move('+i+',1)">▼</button></div>'+
+    '<button class="del-btn" onclick="del('+i+')">×</button></div>'+
+    '<div class="strip-meta">'+
+      '<select onchange="upd('+i+',\'intext\',this.value)"><option'+(x.intext==="INT"?" selected":"")+'>INT</option><option'+(x.intext==="EXT"?" selected":"")+'>EXT</option></select>'+
+      '<select onchange="upd('+i+',\'dn\',this.value)"><option'+(x.dn==="DAY"?" selected":"")+'>DAY</option><option'+(x.dn==="NIGHT"?" selected":"")+'>NIGHT</option></select>'+
+      '<input value="'+esc(x.loc)+'" placeholder="loc" oninput="upd('+i+',\'loc\',this.value)">'+
+      '<input value="'+esc(x.dur)+'" placeholder="durata" oninput="upd('+i+',\'dur\',this.value)">'+
+      '<input style="grid-column:auto;" value="'+esc(x.day)+'" placeholder="gg" oninput="upd('+i+',\'day\',this.value)" title="giornata">'+
+    '</div>'+
+    '<div style="margin-top:5px;"><input style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:11px;color:var(--text);outline:none;" value="'+esc(x.cast)+'" placeholder="Cast presente" oninput="upd('+i+',\'cast\',this.value)"></div>'+
+    '</div>'
+  ).join('');
+}
+function upd(i,f,v){strips[i][f]=v;if(f==="intext")renderStrips();saveAll();}
+function del(i){strips.splice(i,1);renderStrips();saveAll();}
+function move(i,d){const j=i+d;if(j<0||j>=strips.length)return;[strips[i],strips[j]]=[strips[j],strips[i]];renderStrips();saveAll();}
+function renderDays(){
+  const byDay={};
+  strips.forEach((x,i)=>{const d=x.day||"Non assegnate";(byDay[d]=byDay[d]||[]).push({...x,n:i+1});});
+  const keys=Object.keys(byDay).sort();
+  document.getElementById("days-view").innerHTML=keys.map(d=>{
+    const items=byDay[d];
+    return '<div class="day-head"><span class="day-title">'+(d==="Non assegnate"?d:"Giorno "+d)+'</span><span class="day-count">'+items.length+' scene</span></div>'+
+      items.map(x=>'<div class="strip intext-'+x.intext+'"><div style="display:flex;gap:8px;"><span class="strip-num">'+x.n+'</span><div style="flex:1;"><div style="font-size:13px;color:var(--text);">'+esc(x.desc||"(senza titolo)")+'</div><div style="font-size:10px;color:var(--muted);font-family:IBM Plex Mono,monospace;margin-top:3px;">'+x.intext+'/'+x.dn+' · '+esc(x.loc)+' · '+esc(x.cast)+'</div></div></div></div>').join('');
+  }).join('') || '<div class="card" style="text-align:center;color:var(--muted);">Nessuna scena. Aggiungile nello Strip Board e assegna il numero di giornata.</div>';
+}
+function saveAll(){try{localStorage.setItem("sched_data",JSON.stringify({strips}));}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem("sched_data")||"{}");strips=d.strips||[];}catch(e){}if(strips.length===0)strips=[{desc:"",intext:"INT",dn:"DAY",loc:"",cast:"",dur:"",day:"1"}];renderStrips();}
+function exportSched(){
+  let t="PIANO DI LAVORAZIONE\n═══════════════════════\n\n";
+  const byDay={};strips.forEach((x,i)=>{const d=x.day||"?";(byDay[d]=byDay[d]||[]).push({...x,n:i+1});});
+  Object.keys(byDay).sort().forEach(d=>{t+="\n── GIORNO "+d+" ──\n";byDay[d].forEach(x=>t+="  "+x.n+". ["+x.intext+"/"+x.dn+"] "+x.desc+" — "+x.loc+" — cast: "+x.cast+(x.dur?" ("+x.dur+")":"")+"\n");});
+  const blob=new Blob([t],{type:"text/plain;charset=utf-8"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="piano_lavorazione.txt";a.click();URL.revokeObjectURL(url);
+}
+
+// ===== BYOK =====
+(function(){
+  var btn=document.createElement("div");btn.innerHTML="\u2699\uFE0F";
+  btn.style.cssText="position:fixed;left:12px;bottom:calc(70px + env(safe-area-inset-bottom));width:40px;height:40px;border-radius:50%;background:var(--accent);color:#fff;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:17px;z-index:9000;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,0.3);";
+  btn.onclick=openKey;document.body.appendChild(btn);
+  var m=document.createElement("div");m.id="keymodal";m.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px;";
+  m.innerHTML='<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;max-width:420px;width:100%;"><div style="font-size:17px;font-weight:700;margin-bottom:6px;font-family:Syne,sans-serif;color:var(--text);">🔑 API Key</div><div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px;">Incolla la chiave Anthropic. Resta solo su questo dispositivo.</div><input id="keyin" type="password" placeholder="sk-ant-..." autocomplete="off" autocapitalize="off" spellcheck="false" style="width:100%;border:1px solid var(--border);border-radius:10px;padding:12px;font-size:14px;font-family:monospace;outline:none;margin-bottom:14px;box-sizing:border-box;background:var(--bg);color:var(--text);"><div style="display:flex;gap:10px;"><button onclick="closeKey()" style="flex:1;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:14px;cursor:pointer;">Annulla</button><button onclick="saveKey()" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">Salva</button></div><div id="keystatus" style="font-size:11px;color:var(--green);margin-top:10px;text-align:center;min-height:14px;"></div></div>';
+  document.body.appendChild(m);
+})();
+function openKey(){document.getElementById("keyin").value=getApiKey();document.getElementById("keystatus").textContent="";document.getElementById("keymodal").style.display="flex";}
+function closeKey(){document.getElementById("keymodal").style.display="none";}
+function saveKey(){const v=document.getElementById("keyin").value.trim();setApiKey(v);const s=document.getElementById("keystatus");if(v){s.style.color="var(--green)";s.textContent="✓ Salvata";}else{s.style.color="var(--red)";s.textContent="Rimossa";}setTimeout(closeKey,900);}
+
+load();
+</script>
+</body></html>
