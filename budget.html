@@ -478,6 +478,27 @@ body {
 .ai-send:active { opacity: 0.7; }
 .ai-send:disabled { opacity: 0.3; }
 
+.ai-send.stop-mode { background: var(--red) !important; }
+.ai-attach-btn {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 9px 12px; font-size: 16px;
+  cursor: pointer; transition: opacity 0.15s;
+}
+.ai-attach-btn:active { opacity: 0.6; }
+.ai-attach-row { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 10px 0; }
+.ai-attach-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 5px 8px 5px 10px;
+  font-size: 11px; font-family: 'IBM Plex Mono', monospace;
+  color: var(--text); max-width: 160px;
+}
+.ai-attach-chip .fname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ai-attach-chip .fx { cursor: pointer; color: var(--muted); font-size: 14px; }
+.ai-msg-files { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; }
+.ai-msg-file-tag { font-size: 10px; font-family: 'IBM Plex Mono', monospace; background: rgba(0,0,0,0.2); border-radius: 5px; padding: 3px 7px; }
+
+
 .quick-ai-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -689,10 +710,13 @@ body {
 
   <div class="ai-card">
     <div class="ai-chat-area" id="ai-chat"></div>
+    <div class="ai-attach-row" id="ai-attach-row"></div>
     <div class="ai-input-row">
-      <input class="ai-input" id="ai-input" placeholder="Chiedi qualcosa sul budget..." onkeydown="if(event.key==='Enter')aiSend()">
-      <button class="ai-send" id="ai-send-btn" onclick="aiSend()">→</button>
+      <button class="ai-attach-btn" id="ai-attach-btn" onclick="document.getElementById('ai-file-input').click()">📎</button>
+      <input class="ai-input" id="ai-input" placeholder="Chiedi qualcosa sul budget..." onkeydown="if(event.key==='Enter')onAiSendBtn()">
+      <button class="ai-send" id="ai-send-btn" onclick="onAiSendBtn()">→</button>
     </div>
+    <input type="file" id="ai-file-input" multiple accept="image/*,application/pdf,.txt,.md,.csv,.doc,.docx" style="display:none" onchange="handleAiFiles(event)">
   </div>
 
 </div>
@@ -839,6 +863,8 @@ let actualCosts = {};
 let collapsedSections = {};
 let aiHistory = [];
 let isAiLoading = false;
+let aiAttachedFiles = [];
+let aiAbort = null;
 
 // ─── INIT ─────────────────────────────────────────────
 function init() {
@@ -1065,13 +1091,69 @@ function buildBudgetContext() {
   return budgetSummary;
 }
 
+// ─── GESTIONE FILE (AI Advisor) ──────────────────────────
+function handleAiFiles(event) {
+  const files = Array.from(event.target.files || []);
+  files.forEach(readAiFile);
+  event.target.value = '';
+}
+function readAiFile(file) {
+  const isImage = file.type.startsWith('image/');
+  const isPdf = file.type === 'application/pdf';
+  const isText = file.type.startsWith('text/') || /\.(txt|md|csv|json)$/i.test(file.name);
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    if (isImage || isPdf) {
+      const b64 = String(e.target.result).split(',')[1] || '';
+      aiAttachedFiles.push({ name: file.name, type: file.type, dataB64: b64, isImage, isPdf, textContent: null });
+    } else if (isText) {
+      aiAttachedFiles.push({ name: file.name, type: file.type, dataB64: null, isImage:false, isPdf:false, textContent: String(e.target.result) });
+    } else {
+      aiAttachedFiles.push({ name: file.name, type: file.type, dataB64: null, isImage:false, isPdf:false, textContent: '[File "' + file.name + '" allegato ma formato non leggibile. Converti in PDF o testo.]' });
+    }
+    renderAiAttachChips();
+  };
+  if (isImage || isPdf) reader.readAsDataURL(file);
+  else reader.readAsText(file);
+}
+function renderAiAttachChips() {
+  const row = document.getElementById('ai-attach-row');
+  row.innerHTML = aiAttachedFiles.map((f, i) => {
+    const icon = f.isImage ? '🖼️' : f.isPdf ? '📄' : '📃';
+    return '<div class="ai-attach-chip">' + icon + '<span class="fname">' + f.name.replace(/</g,'&lt;') + '</span><span class="fx" onclick="removeAiAttach(' + i + ')">×</span></div>';
+  }).join('');
+}
+function removeAiAttach(i) { aiAttachedFiles.splice(i,1); renderAiAttachChips(); }
+
+function buildAiContent(textMsg) {
+  if (aiAttachedFiles.length === 0) return textMsg;
+  const parts = [];
+  aiAttachedFiles.forEach(f => {
+    if (f.isImage) parts.push({ type:'image', source:{ type:'base64', media_type:f.type, data:f.dataB64 } });
+    else if (f.isPdf) parts.push({ type:'document', source:{ type:'base64', media_type:'application/pdf', data:f.dataB64 } });
+    else if (f.textContent) parts.push({ type:'text', text:'Contenuto del file "' + f.name + '":\n' + f.textContent });
+  });
+  parts.push({ type:'text', text: textMsg });
+  return parts;
+}
+
+function onAiSendBtn() {
+  if (isAiLoading) { if (aiAbort) aiAbort.abort(); }
+  else aiSend();
+}
+function setAiSendState(loading) {
+  const btn = document.getElementById('ai-send-btn');
+  if (loading) { btn.classList.add('stop-mode'); btn.innerHTML = '◼'; btn.disabled = false; }
+  else { btn.classList.remove('stop-mode'); btn.innerHTML = '→'; btn.disabled = false; }
+}
+
 async function aiSend() {
   if (isAiLoading) return;
   const input = document.getElementById('ai-input');
   const text = input.value.trim();
-  if (!text) return;
+  if (!text && aiAttachedFiles.length === 0) return;
   input.value = '';
-  await aiCall(text);
+  await aiCall(text || 'Analizza i file allegati.');
 }
 
 async function aiQuick(text) {
@@ -1082,21 +1164,31 @@ async function aiCall(userMsg) {
   if (isAiLoading) return;
 
   const budgetCtx = buildBudgetContext();
-  const fullMsg = budgetCtx + '\n\n---\nDOMANDA: ' + userMsg;
+  const filesForMsg = aiAttachedFiles.slice();
 
-  addAiMsg('user', userMsg);
-  aiHistory.push({ role: 'user', content: fullMsg });
+  // Per la history: testo + contesto budget; gli allegati vanno come content multimodale
+  const textWithCtx = budgetCtx + '\n\n---\nDOMANDA: ' + userMsg;
+  const userContent = buildAiContent(textWithCtx);
+
+  addAiMsg('user', userMsg, filesForMsg);
+  aiHistory.push({ role: 'user', content: userContent });
+
+  aiAttachedFiles = [];
+  renderAiAttachChips();
 
   isAiLoading = true;
-  document.getElementById('ai-send-btn').disabled = true;
+  setAiSendState(true);
 
   const typingId = showAiTyping();
 
-  if(!getApiKey()){ removeAiTyping(typingId); addAiMsg('assistant', '\uD83D\uDD11 Per usare l\'AI Advisor serve la tua API key Anthropic. Tap sul pulsante ingranaggio in basso a sinistra per inserirla.'); isAiLoading=false; document.getElementById('ai-send-btn').disabled=false; return; }
+  if(!getApiKey()){ removeAiTyping(typingId); addAiMsg('assistant', '\uD83D\uDD11 Per usare l\'AI Advisor serve la tua API key Anthropic. Tap sul pulsante ingranaggio in basso a sinistra per inserirla.'); isAiLoading=false; setAiSendState(false); return; }
+
+  aiAbort = new AbortController();
 
   try {
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
+      signal: aiAbort.signal,
       headers: { 'Content-Type': 'application/json', 'x-api-key': getApiKey(), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
@@ -1119,14 +1211,20 @@ async function aiCall(userMsg) {
     addAiMsg('assistant', reply);
   } catch(e) {
     removeAiTyping(typingId);
-    addAiMsg('assistant', '⚠️ Errore di connessione.');
+    if (e.name === 'AbortError') {
+      addAiMsg('assistant', '⏹ Richiesta interrotta.');
+      aiHistory.pop();
+    } else {
+      addAiMsg('assistant', '⚠️ Errore di connessione.');
+    }
   }
 
   isAiLoading = false;
-  document.getElementById('ai-send-btn').disabled = false;
+  aiAbort = null;
+  setAiSendState(false);
 }
 
-function addAiMsg(role, text) {
+function addAiMsg(role, text, files = []) {
   const chat = document.getElementById('ai-chat');
   const div = document.createElement('div');
   div.className = `ai-msg ${role}`;
@@ -1134,7 +1232,14 @@ function addAiMsg(role, text) {
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
     .replace(/\n/g,'<br>');
-  div.innerHTML = `<div class="ai-bubble">${formatted}</div>`;
+  let filesHtml = '';
+  if (files && files.length) {
+    filesHtml = '<div class="ai-msg-files">' + files.map(f => {
+      const icon = f.isImage ? '🖼️' : f.isPdf ? '📄' : '📃';
+      return '<span class="ai-msg-file-tag">' + icon + ' ' + f.name.replace(/</g,'&lt;') + '</span>';
+    }).join('') + '</div>';
+  }
+  div.innerHTML = `<div class="ai-bubble">${filesHtml}${formatted}</div>`;
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
   showTab('ai');

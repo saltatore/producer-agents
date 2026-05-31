@@ -356,6 +356,52 @@
   .send-btn:active { transform: scale(0.92); background: var(--accent2); }
   .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+  .send-btn.stop-mode { background: var(--red); }
+  .send-btn.stop-mode:active { background: #c45050; }
+  .attach-btn {
+    width: 44px; height: 44px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 18px;
+    transition: all 0.2s;
+  }
+  .attach-btn:active { background: var(--surface2); }
+  .attach-row {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    padding: 0 0 8px 0;
+  }
+  .attach-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 5px 8px 5px 10px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--text);
+    max-width: 180px;
+  }
+  .attach-chip .fname {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .attach-chip .fx {
+    cursor: pointer; color: var(--muted);
+    font-size: 14px; line-height: 1;
+  }
+  .attach-chip .fx:active { color: var(--red); }
+  .msg-attachments {
+    display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px;
+  }
+  .msg-attachment-tag {
+    font-size: 10px; font-family: 'DM Mono', monospace;
+    background: rgba(0,0,0,0.15); border-radius: 5px;
+    padding: 3px 7px;
+  }
+
+
   /* Checklist style response */
   .checklist { list-style: none; margin-top: 8px; }
   .checklist li {
@@ -572,7 +618,9 @@
 
 <!-- INPUT BAR -->
 <div class="input-bar">
+  <div class="attach-row" id="attach-row"></div>
   <div class="input-row">
+    <button class="attach-btn" id="attach-btn" onclick="document.getElementById('file-input').click()">📎</button>
     <textarea
       id="input"
       class="input-field"
@@ -581,8 +629,9 @@
       onkeydown="handleKey(event)"
       oninput="autoResize(this)"
     ></textarea>
-    <button class="send-btn" id="send-btn" onclick="sendMessage()">→</button>
+    <button class="send-btn" id="send-btn" onclick="onSendBtn()">→</button>
   </div>
+  <input type="file" id="file-input" multiple accept="image/*,application/pdf,.txt,.md,.csv,.doc,.docx" style="display:none" onchange="handleFiles(event)">
 </div>
 
 <script>
@@ -590,6 +639,8 @@
 let currentMode = 'chat';
 let isLoading = false;
 let conversationHistory = [];
+let attachedFiles = [];   // {name, type, dataB64, isImage, isPdf, textContent}
+let currentAbort = null;  // AbortController per stoppare la richiesta
 
 const SYSTEM_PROMPT = `Sei un agente esperto in permessi di ripresa per produzioni pubblicitarie (commercial) a Napoli, Italia.
 Conosci perfettamente:
@@ -660,6 +711,94 @@ function setMode(mode) {
   }
 }
 
+
+// ─── GESTIONE FILE ───────────────────────────────────────
+function handleFiles(event) {
+  const files = Array.from(event.target.files || []);
+  files.forEach(readOneFile);
+  event.target.value = ''; // reset per poter ricaricare stesso file
+}
+
+function readOneFile(file) {
+  const isImage = file.type.startsWith('image/');
+  const isPdf = file.type === 'application/pdf';
+  const isText = file.type.startsWith('text/') || /\.(txt|md|csv|json)$/i.test(file.name);
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    if (isImage || isPdf) {
+      // base64 puro (rimuovo prefisso data:...)
+      const b64 = String(e.target.result).split(',')[1] || '';
+      attachedFiles.push({ name: file.name, type: file.type, dataB64: b64, isImage, isPdf, textContent: null });
+    } else if (isText) {
+      attachedFiles.push({ name: file.name, type: file.type, dataB64: null, isImage:false, isPdf:false, textContent: String(e.target.result) });
+    } else {
+      // doc/docx ecc → non leggibili direttamente, avviso
+      attachedFiles.push({ name: file.name, type: file.type, dataB64: null, isImage:false, isPdf:false, textContent: '[File "' + file.name + '" allegato ma formato non leggibile direttamente. Converti in PDF o testo per analizzarne il contenuto.]' });
+    }
+    renderAttachChips();
+  };
+  if (isImage || isPdf) reader.readAsDataURL(file);
+  else reader.readAsText(file);
+}
+
+function renderAttachChips() {
+  const row = document.getElementById('attach-row');
+  row.innerHTML = attachedFiles.map((f, i) => {
+    const icon = f.isImage ? '🖼️' : f.isPdf ? '📄' : '📃';
+    return '<div class="attach-chip">' + icon +
+      '<span class="fname">' + escapeHtml(f.name) + '</span>' +
+      '<span class="fx" onclick="removeAttach(' + i + ')">×</span></div>';
+  }).join('');
+}
+
+function removeAttach(i) {
+  attachedFiles.splice(i, 1);
+  renderAttachChips();
+}
+
+// Costruisce il content multimodale per l'API
+function buildUserContent(text) {
+  // Se non ci sono allegati → stringa semplice
+  if (attachedFiles.length === 0) return text;
+
+  const parts = [];
+  attachedFiles.forEach(f => {
+    if (f.isImage) {
+      parts.push({ type: 'image', source: { type: 'base64', media_type: f.type, data: f.dataB64 } });
+    } else if (f.isPdf) {
+      parts.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: f.dataB64 } });
+    } else if (f.textContent) {
+      parts.push({ type: 'text', text: 'Contenuto del file "' + f.name + '":\n' + f.textContent });
+    }
+  });
+  parts.push({ type: 'text', text: text || 'Analizza i file allegati.' });
+  return parts;
+}
+
+// ─── PULSANTE INVIO/STOP ─────────────────────────────────
+function onSendBtn() {
+  if (isLoading) {
+    // Modalità stop
+    if (currentAbort) currentAbort.abort();
+  } else {
+    sendMessage();
+  }
+}
+
+function setSendButtonState(loading) {
+  const btn = document.getElementById('send-btn');
+  if (loading) {
+    btn.classList.add('stop-mode');
+    btn.innerHTML = '◼';
+    btn.disabled = false;
+  } else {
+    btn.classList.remove('stop-mode');
+    btn.innerHTML = '→';
+    btn.disabled = false;
+  }
+}
+
 // ─── MESSAGING ───────────────────────────────────────────
 function sendQuick(text) {
   document.getElementById('input').value = text;
@@ -670,7 +809,7 @@ async function sendMessage() {
   if (isLoading) return;
   const input = document.getElementById('input');
   const text = input.value.trim();
-  if (!text) return;
+  if (!text && attachedFiles.length === 0) return;
 
   // Hide welcome on first message
   document.getElementById('welcome-section').classList.add('hidden');
@@ -682,18 +821,29 @@ async function sendMessage() {
   input.value = '';
   input.style.height = 'auto';
 
-  addMessage('user', text);
-  conversationHistory.push({ role: 'user', content: text });
+  // snapshot allegati per questo messaggio
+  const filesForMsg = attachedFiles.slice();
+  const userContent = buildUserContent(text);
+
+  addMessage('user', text, false, filesForMsg);
+  conversationHistory.push({ role: 'user', content: userContent });
+
+  // pulisci allegati dopo l'invio
+  attachedFiles = [];
+  renderAttachChips();
 
   isLoading = true;
-  document.getElementById('send-btn').disabled = true;
+  setSendButtonState(true);
   const typingId = showTyping();
 
-  if(!getApiKey()){ removeTyping(typingId); addMessage('assistant', '\uD83D\uDD11 Per usare l\'AI serve la tua API key Anthropic. Tap sul pulsante ingranaggio in basso a sinistra per inserirla.'); isLoading=false; document.getElementById('send-btn').disabled=false; return; }
+  if(!getApiKey()){ removeTyping(typingId); addMessage('assistant', '\uD83D\uDD11 Per usare l\'AI serve la tua API key Anthropic. Tap sul pulsante ingranaggio in basso a sinistra per inserirla.'); isLoading=false; setSendButtonState(false); return; }
+
+  currentAbort = new AbortController();
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
+      signal: currentAbort.signal,
       headers: { 'Content-Type': 'application/json', 'x-api-key': getApiKey(), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
@@ -716,7 +866,6 @@ async function sendMessage() {
     }
     conversationHistory.push({ role: 'assistant', content: reply });
 
-    // Check if it's a letter/document
     const isDoc = reply.includes('[') && reply.includes(']') &&
       (reply.toLowerCase().includes('oggetto:') || reply.toLowerCase().includes('spett.') || reply.toLowerCase().includes('alla cortese'));
 
@@ -724,14 +873,21 @@ async function sendMessage() {
 
   } catch (err) {
     removeTyping(typingId);
-    addMessage('assistant', '⚠️ Errore di connessione. Controlla la rete e riprova.');
+    if (err.name === 'AbortError') {
+      addMessage('assistant', '⏹ Richiesta interrotta.');
+      // rimuovo l'ultimo messaggio utente dalla history per coerenza
+      conversationHistory.pop();
+    } else {
+      addMessage('assistant', '⚠️ Errore di connessione. Controlla la rete e riprova.');
+    }
   }
 
   isLoading = false;
-  document.getElementById('send-btn').disabled = false;
+  currentAbort = null;
+  setSendButtonState(false);
 }
 
-function addMessage(role, text, isDocument = false) {
+function addMessage(role, text, isDocument = false, files = []) {
   const chat = document.getElementById('chat-area');
   const now = new Date().toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' });
 
@@ -739,8 +895,16 @@ function addMessage(role, text, isDocument = false) {
   msg.className = `msg ${role}`;
 
   if (role === 'user') {
+    let attachHtml = '';
+    if (files && files.length) {
+      attachHtml = '<div class="msg-attachments">' + files.map(f => {
+        const icon = f.isImage ? '🖼️' : f.isPdf ? '📄' : '📃';
+        return '<span class="msg-attachment-tag">' + icon + ' ' + escapeHtml(f.name) + '</span>';
+      }).join('') + '</div>';
+    }
+    const bubbleText = text ? escapeHtml(text) : '<em style="opacity:0.7">(file allegato)</em>';
     msg.innerHTML = `
-      <div class="msg-bubble">${escapeHtml(text)}</div>
+      <div class="msg-bubble">${attachHtml}${bubbleText}</div>
       <div class="msg-time">${now}</div>
     `;
   } else if (isDocument) {
